@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --color-primary: #1a1a1a;
+  --color-secondary: #c9a962;
+  --color-accent: #14b8a6;
+  --color-background: #09090b;
+  --color-surface: #18181b;
+  --color-surface-hover: #27272a;
+  --color-text: #e4e4e7;
+  --color-text-light: #a1a1aa;
+  --gradient-teal: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.3);
+  --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  color: var(--color-text);
+  background: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20, 184, 166, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(45, 212, 191, 0.06) 0%, transparent 40%),
+    linear-gradient(180deg, #09090b 0%, #020617 100%);
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #171717;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #14b8a6;
+}
+
+/* Progress Bar */
+.progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  z-index: 9999;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #ffffff;
+  width: 0%;
+  animation: progress-scroll linear;
+  animation-timeline: scroll();
+}
+
+@keyframes progress-scroll {
+  to { width: 100%; }
+}
+
+/* Scroll-driven animations */
+@keyframes slideInFromBottom {
+  from { opacity: 0; transform: translateY(60px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes particle-rise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-100vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  50% { transform: translateX(-50%) translateY(10px); opacity: 0.4; }
+}
+
+/* Animation classes */
+.animate-on-scroll {
+  animation-timeline: view();
+  animation-range: entry 10% cover 50%;
+  animation-fill-mode: both;
+  animation-name: slideInFromBottom;
+}
+
+.animate-slide-up {
+  animation-timeline: view();
+  animation-range: entry 10% cover 40%;
+  animation-name: slideInFromBottom;
+  animation-fill-mode: both;
+}
+
+.animate-slide-left {
+  animation-timeline: view();
+  animation-range: entry 10% cover 40%;
+  animation-name: slideInFromLeft;
+  animation-fill-mode: both;
+}
+
+.animate-slide-right {
+  animation-timeline: view();
+  animation-range: entry 10% cover 40%;
+  animation-name: slideInFromRight;
+  animation-fill-mode: both;
+}
+
+.animate-scale-in {
+  animation-timeline: view();
+  animation-range: entry 10% cover 40%;
+  animation-name: scaleIn;
+  animation-fill-mode: both;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: var(--transition);
+  position: relative;
+}
+
+.card-hover:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-card);
+}
+
+.card-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-teal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.card-hover:hover::before {
+  transform: scaleX(1);
+}
+
+/* Button styles */
+.btn-primary {
+  background: var(--gradient-teal);
+  color: #09090b;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(20, 184, 166, 0.4);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: var(--transition);
+}
+
+.btn-outline:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: rgba(20, 184, 166, 0.1);
+}
+
+/* Section styles */
+.section-padding {
+  padding: 100px 0;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  color: var(--color-text-light);
+  font-size: 1.1rem;
+  margin-bottom: 48px;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #14b8a6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Input styles */
+input, textarea, select {
+  color: #ffffff;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.5);
+  border-color: #14b8a6;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #71717a;
+}
+
+/* Button hover effect */
+button.btn-primary {
+  @apply bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg shadow-teal-500/30;
+}
+
+/* Particles container */
+.particles-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(20, 184, 166, 0.4);
+  border-radius: 50%;
+  animation: particle-rise linear infinite;
+}
+
+/* Scroll bounce indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: scroll-bounce 2s ease-in-out infinite;
+}

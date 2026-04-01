@@ -1,0 +1,34 @@
+﻿# -----------------------------
+# OS / Editor
+# -----------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# -----------------------------
+# Logs
+# -----------------------------
+*.log
+backend/backend.log
+
+# -----------------------------
+# Java / Maven
+# -----------------------------
+backend/target/
+
+# -----------------------------
+# Frontend
+# -----------------------------
+frontend/node_modules/
+frontend/dist/
+
+# -----------------------------
+# Local secrets / machine-only files
+# -----------------------------
+backend/.env
+backend/src/main/resources/application.properties
+activate-user.ps1
+activate-user2.ps1
+backend/nul

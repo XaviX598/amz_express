@@ -1,0 +1,39 @@
+﻿# Server Configuration
+server.port=8080
+
+# Database Configuration (use env vars)
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/amzexpress}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:postgres}
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=true
+
+# JWT Configuration
+jwt.secret=${JWT_SECRET:your-256-bit-secret-key-for-jwt-signing-minimum-32-chars}
+jwt.expiration=${JWT_EXPIRATION:86400000}
+
+# Gmail SMTP Configuration
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=${MAIL_USERNAME:}
+spring.mail.password=${MAIL_PASSWORD:}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+
+# Logging
+logging.level.org.springframework.security=INFO
+logging.level.com.amzexpress=DEBUG
+
+# Multipart uploads (transfer proof)
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=12MB
+
+# External API keys
+scrapingdog.api-key=${SCRAPINGDOG_API_KEY:}
+asindataapi.api-key=${ASINDATAAPI_KEY:}
