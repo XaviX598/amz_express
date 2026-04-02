@@ -32,3 +32,4 @@ backend/src/main/resources/application.properties
 activate-user.ps1
 activate-user2.ps1
 backend/nul
+.ssh/
