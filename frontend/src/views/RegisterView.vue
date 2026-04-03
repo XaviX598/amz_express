@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/auth'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -141,111 +142,112 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-64px)] pt-[64px] px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
-    <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
-    <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[900px] h-[420px] bg-teal-500/10 blur-3xl pointer-events-none" />
+  <div class="register-page min-h-[calc(100dvh-64px)] pt-[72px] px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
+    <div class="register-noise pointer-events-none absolute inset-0" />
 
-    <FadeIn direction="up" :duration="600">
+    <FadeIn direction="up" :duration="560">
       <div class="relative max-w-5xl mx-auto w-full">
-        <div class="grid lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-          <div class="hidden lg:flex flex-col justify-between rounded-3xl border border-white/10 bg-zinc-900/70 p-8">
+        <div class="grid lg:grid-cols-[0.9fr,1.1fr] gap-0 rounded-3xl overflow-hidden border border-[#cad8dd] shadow-[0_30px_70px_rgba(26,74,97,0.16)]">
+          <aside class="hidden lg:flex flex-col justify-between register-side p-9">
             <div>
-              <p class="text-sm text-teal-400 font-semibold uppercase tracking-wide">Nueva cuenta</p>
-              <h2 class="text-4xl font-bold text-white mt-3 leading-tight">Crea tu acceso y empieza a importar con control</h2>
-              <p class="text-zinc-400 mt-4">Calcula costos, revisa estados y administra tus pedidos desde una sola cuenta.</p>
+              <p class="register-kicker">Nueva cuenta</p>
+              <h2 class="register-title">La precisión que tu negocio requiere</h2>
+              <p class="register-copy">
+                Organizá cada importación con control editorial de costos, peso, impuestos y tiempos.
+              </p>
             </div>
 
-            <div class="rounded-2xl border border-zinc-700/50 bg-zinc-950/70 p-4 mt-8">
-              <p class="text-zinc-500 text-sm mb-2">Recomendaciones</p>
-              <ul class="text-sm text-zinc-300 space-y-1">
-                <li>Usa un email activo para recibir actualizaciones.</li>
-                <li>La contraseña debe tener al menos 6 caracteres.</li>
-                <li>Podrás cotizar y crear pedidos inmediatamente.</li>
+            <div class="register-side-card">
+              <p class="text-sm text-[#d8e4ea] mb-2">Recomendaciones</p>
+              <ul class="text-sm text-[#ebf1f4] space-y-1">
+                <li>Usá un correo activo para verificación.</li>
+                <li>La contraseña debe tener mínimo 6 caracteres.</li>
+                <li>Después del registro podés cotizar al instante.</li>
               </ul>
             </div>
-          </div>
+          </aside>
 
-          <div class="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/20">
+          <section class="register-card p-6 sm:p-9">
             <div class="text-center mb-7">
-              <div class="size-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/30">
+              <div class="register-icon size-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
               </div>
-              <h1 class="text-3xl font-bold text-white">Crear cuenta</h1>
-              <p class="text-zinc-400 mt-2">Completa tus datos para registrarte</p>
+              <h1 class="text-3xl font-bold text-[#14384d]">Crear cuenta</h1>
+              <p class="text-[#62757f] mt-2">Completá tus datos para registrarte</p>
             </div>
 
-            <div v-if="localError" class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
+            <div v-if="localError" class="mb-6 p-4 register-error text-sm">
               {{ localError }}
             </div>
 
             <form @submit.prevent="handleSubmit" class="space-y-5">
               <div>
-                <label class="block text-sm font-medium text-zinc-300 mb-2">Nombre completo</label>
+                <label class="register-label">Nombre completo</label>
                 <input
                   v-model="name"
                   type="text"
                   autocomplete="name"
-                  placeholder="Juan Pérez"
-                  class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  placeholder="Juan Perez"
+                  class="register-input"
                 />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+                <label class="register-label">Correo electrónico</label>
                 <input
                   v-model="email"
                   type="email"
                   autocomplete="email"
-                  placeholder="tu@email.com"
-                  class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  placeholder="nombre@empresa.com"
+                  class="register-input"
                 />
               </div>
 
               <div class="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-zinc-300 mb-2">Contraseña</label>
+                  <label class="register-label">Contraseña</label>
                   <input
                     v-model="password"
                     type="password"
                     autocomplete="new-password"
                     placeholder="••••••••"
-                    class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                    class="register-input"
                   />
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-zinc-300 mb-2">Confirmar contraseña</label>
+                  <label class="register-label">Confirmar contraseña</label>
                   <input
                     v-model="confirmPassword"
                     type="password"
                     autocomplete="new-password"
                     placeholder="••••••••"
-                    class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                    class="register-input"
                   />
                 </div>
               </div>
 
-              <button
+              <MotionButton
                 type="submit"
+                :label="authStore.loading ? 'Creando cuenta...' : 'Crear cuenta'"
                 :disabled="authStore.loading"
-                class="w-full btn-primary py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <span v-if="authStore.loading">Creando cuenta...</span>
-                <span v-else>Crear cuenta</span>
-              </button>
+                variant="primary"
+                size="lg"
+                block
+              />
             </form>
 
             <div class="mt-6 text-center">
-              <p class="text-zinc-400">
+              <p class="text-[#62757f]">
                 ¿Ya tienes cuenta?
-                <RouterLink to="/login" class="text-teal-400 hover:text-teal-300 font-medium transition-colors">
+                <RouterLink to="/login" class="text-[#1a4a61] hover:text-[#b46258] font-medium transition-colors">
                   Inicia sesión
                 </RouterLink>
               </p>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </FadeIn>
@@ -253,23 +255,23 @@ onUnmounted(() => {
     <!-- Verification Modal -->
     <Teleport to="body">
       <div v-if="showVerification" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <div class="absolute inset-0 bg-[rgba(12,24,33,0.58)] backdrop-blur-sm" />
         <FadeIn direction="scale" :duration="300">
-          <div class="relative glass rounded-2xl p-6 sm:p-8 max-w-md w-full border border-white/10">
+          <div class="relative register-modal rounded-2xl p-6 sm:p-8 max-w-md w-full border border-[#cad8dd]">
             <div class="text-center mb-6">
-              <div class="w-14 h-14 bg-teal-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-7 h-7 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-14 h-14 register-icon rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 class="text-xl font-bold text-white">Verifica tu correo</h3>
-              <p class="text-zinc-400 text-sm mt-2">
+              <h3 class="text-xl font-bold text-[#14384d]">Verificá tu correo</h3>
+              <p class="text-[#62757f] text-sm mt-2">
                 Te enviamos un código de 6 dígitos a<br />
-                <span class="text-teal-400">{{ verificationEmail }}</span>
+                <span class="text-[#35627A] font-semibold">{{ verificationEmail }}</span>
               </p>
             </div>
 
-            <div v-if="verificationError" class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
+            <div v-if="verificationError" class="mb-4 p-3 register-error text-sm text-center">
               {{ verificationError }}
             </div>
 
@@ -280,26 +282,26 @@ onUnmounted(() => {
                   type="text"
                   maxlength="6"
                   placeholder="000000"
-                  class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-4 px-4 text-center text-2xl font-mono tracking-[12px] text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  class="register-input text-center text-2xl font-mono tracking-[10px]"
                   autocomplete="one-time-code"
                 />
               </div>
 
-              <button
+              <MotionButton
                 type="submit"
+                :label="verifying ? 'Verificando...' : 'Verificar'"
                 :disabled="verifying || verificationCode.length !== 6"
-                class="w-full btn-primary py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <span v-if="verifying">Verificando...</span>
-                <span v-else>Verificar</span>
-              </button>
+                variant="primary"
+                size="lg"
+                block
+              />
             </form>
 
             <div class="mt-4 text-center">
               <button
                 @click="handleResend"
                 :disabled="resending || resendCooldown > 0"
-                class="text-sm text-zinc-400 hover:text-teal-400 transition-colors disabled:opacity-50"
+                class="text-sm text-[#62757f] hover:text-[#1a4a61] transition-colors disabled:opacity-50"
               >
                 <span v-if="resending">Enviando...</span>
                 <span v-else>{{ resendLabel }}</span>
@@ -311,6 +313,118 @@ onUnmounted(() => {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.register-page {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(229, 174, 169, 0.24), transparent 36%),
+    radial-gradient(circle at 86% 20%, rgba(166, 169, 208, 0.24), transparent 42%),
+    linear-gradient(180deg, #f5f7f7 0%, #edf3f2 100%);
+}
+
+.register-noise {
+  opacity: 0.26;
+  background-image: radial-gradient(rgba(53, 98, 122, 0.12) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+}
+
+.register-side {
+  background:
+    linear-gradient(180deg, rgba(10, 34, 49, 0.2), rgba(10, 34, 49, 0.24)),
+    linear-gradient(155deg, #173e53 0%, #245973 55%, #35627a 100%);
+  color: #f5f5f5;
+}
+
+.register-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.78rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d3e6f1;
+  border: 1px solid rgba(245, 245, 245, 0.26);
+  background: rgba(245, 245, 245, 0.08);
+}
+
+.register-title {
+  margin-top: 1rem;
+  font-size: 2rem;
+  line-height: 1.06;
+  letter-spacing: 0.02em;
+  font-weight: 800;
+}
+
+.register-copy {
+  margin-top: 0.95rem;
+  color: #dce7ec;
+  line-height: 1.6;
+}
+
+.register-side-card {
+  border: 1px solid rgba(245, 245, 245, 0.24);
+  border-radius: 1rem;
+  background: rgba(245, 245, 245, 0.12);
+  padding: 1rem;
+}
+
+.register-card {
+  background: rgba(249, 251, 251, 0.94);
+}
+
+.register-modal {
+  background: rgba(249, 251, 251, 0.98);
+  box-shadow: 0 26px 60px rgba(12, 24, 33, 0.28);
+}
+
+.register-icon {
+  background: linear-gradient(135deg, #1a4a61, #35627a);
+  box-shadow: 0 12px 28px rgba(26, 74, 97, 0.24);
+}
+
+.register-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #35627a;
+}
+
+.register-input {
+  width: 100%;
+  border-radius: 0.78rem;
+  border: 1px solid #d2dde0;
+  background: #edf2f2;
+  color: #14384d;
+  padding: 0.88rem 0.9rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.register-input::placeholder {
+  color: #8b9ba2;
+}
+
+.register-input:focus {
+  border-color: #35627a;
+  box-shadow: 0 0 0 3px rgba(53, 98, 122, 0.14);
+  background: #f7faf9;
+  outline: none;
+}
+
+.register-error {
+  border: 1px solid rgba(180, 98, 88, 0.35);
+  border-radius: 0.8rem;
+  background: rgba(180, 98, 88, 0.12);
+  color: #8b2f24;
+}
+
+@media (max-width: 1024px) {
+  .register-card {
+    border-radius: 1.2rem;
+  }
+}
+</style>
 
 
 

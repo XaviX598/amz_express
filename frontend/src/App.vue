@@ -20,7 +20,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-zinc-950">
+  <div class="app-shell min-h-screen">
     <!-- Progress Bar -->
     <div class="progress-container">
       <div class="progress-bar" />
@@ -37,6 +37,13 @@ onUnmounted(() => {
 </template>
 
 <style>
+.app-shell {
+  background:
+    radial-gradient(ellipse 64% 40% at 18% -6%, rgba(229, 174, 169, 0.2) 0%, transparent 58%),
+    radial-gradient(ellipse 54% 34% at 88% 16%, rgba(166, 169, 208, 0.22) 0%, transparent 56%),
+    linear-gradient(180deg, #f5f7f7 0%, #edf3f2 100%);
+}
+
 .route-fade-enter-active,
 .route-fade-leave-active {
   transition: opacity 220ms ease, transform 220ms ease;

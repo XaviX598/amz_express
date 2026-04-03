@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { userService } from '@/services/user'
 import { useUiStore } from '@/stores/ui'
 import type { UserResponse, Role } from '@/types'
+import MotionButton from '@/components/MotionButton.vue'
 
 const users = ref<UserResponse[]>([])
 const uiStore = useUiStore()
@@ -161,27 +162,25 @@ function showOrderCount(role: Role): boolean {
 </script>
 
 <template>
-  <div class="min-h-screen pt-[64px] pb-16">
+  <div class="admin-users-page min-h-screen pt-[64px] pb-16">
     <!-- Background -->
     <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-teal-500/5 blur-3xl" />
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
-      <div class="animate-fade-in-up flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+      <div class="animate-fade-in-up flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-8">
         <div>
           <h1 class="text-3xl font-bold text-white">Gestionar Usuarios</h1>
-          <p class="text-zinc-400 mt-1">Administra los roles de los usuarios</p>
+          <p class="text-zinc-200 mt-1">Administra los roles de los usuarios</p>
         </div>
-        <button
+        <MotionButton
           @click="showCreateModal = true"
-          class="btn-primary flex items-center gap-2 group animate-bounce-subtle"
-        >
-          <svg class="w-5 h-5 transition-transform group-hover:rotate-90 animate-spin-once" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Crear Admin
-        </button>
+          label="Crear Admin"
+          variant="secondary"
+          size="md"
+          class="admin-create-btn lg:mt-4"
+        />
       </div>
 
       <!-- Stats & Filter Bar -->
@@ -194,7 +193,7 @@ function showOrderCount(role: Role): boolean {
               <div class="absolute inset-0 bg-teal-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div class="relative bg-zinc-800/50 rounded-xl px-5 py-3 border border-white/5 transition-transform duration-300 group-hover:-translate-y-0.5">
                 <p class="text-2xl font-bold text-white animate-count">{{ stats.total }}</p>
-                <p class="text-xs text-zinc-500 uppercase tracking-wider">Total</p>
+                <p class="text-xs text-zinc-300 uppercase tracking-wider">Total</p>
               </div>
             </div>
             
@@ -206,7 +205,7 @@ function showOrderCount(role: Role): boolean {
               <div class="absolute inset-0 bg-blue-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div class="relative bg-zinc-800/50 rounded-xl px-5 py-3 border border-blue-500/10 transition-transform duration-300 group-hover:-translate-y-0.5">
                 <p class="text-2xl font-bold text-blue-400 animate-count">{{ stats.admins }}</p>
-                <p class="text-xs text-zinc-500 uppercase tracking-wider">Admins</p>
+                <p class="text-xs text-zinc-300 uppercase tracking-wider">Admins</p>
               </div>
             </div>
             
@@ -217,8 +216,8 @@ function showOrderCount(role: Role): boolean {
             <div class="relative group cursor-default">
               <div class="absolute inset-0 bg-zinc-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div class="relative bg-zinc-800/50 rounded-xl px-5 py-3 border border-white/5 transition-transform duration-300 group-hover:-translate-y-0.5">
-                <p class="text-2xl font-bold text-zinc-400 animate-count">{{ stats.users }}</p>
-                <p class="text-xs text-zinc-500 uppercase tracking-wider">Users</p>
+                <p class="text-2xl font-bold text-zinc-200 animate-count">{{ stats.users }}</p>
+                <p class="text-xs text-zinc-300 uppercase tracking-wider">Users</p>
               </div>
             </div>
           </div>
@@ -227,20 +226,20 @@ function showOrderCount(role: Role): boolean {
           <div class="flex-1 lg:max-w-sm lg:ml-auto">
             <div class="relative group">
               <div class="absolute inset-0 bg-teal-500/10 rounded-xl blur-sm opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
-              <div class="relative flex items-center bg-zinc-800/50 rounded-xl border border-zinc-700/50 focus-within:border-teal-500/50 transition-colors duration-300">
-                <svg class="w-5 h-5 text-zinc-500 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="relative flex items-center bg-zinc-900/70 rounded-xl border border-[#a6a9d0]/35 focus-within:border-[#e5aea9]/65 transition-colors duration-300">
+                <svg class="w-5 h-5 text-zinc-300 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Buscar por nombre o email..."
-                  class="w-full bg-transparent py-3 px-3 text-white placeholder-zinc-500 focus:outline-none"
+                  class="w-full bg-transparent py-3 px-3 text-white placeholder-zinc-300 focus:outline-none"
                 />
                 <button 
                   v-if="searchQuery" 
                   @click="searchQuery = ''"
-                  class="mr-3 text-zinc-500 hover:text-white transition-colors duration-200"
+                  class="mr-3 text-zinc-300 hover:text-white transition-colors duration-200"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -253,7 +252,7 @@ function showOrderCount(role: Role): boolean {
         
         <!-- Filter Chips -->
         <div class="flex items-center gap-3 mt-6">
-          <span class="text-xs text-zinc-600 uppercase tracking-wider font-medium">Filtrar:</span>
+          <span class="text-xs text-zinc-300 uppercase tracking-wider font-medium">Filtrar:</span>
           <div class="flex items-center gap-2">
             <!-- All -->
             <button
@@ -262,7 +261,7 @@ function showOrderCount(role: Role): boolean {
                 'relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300',
                 filter === 'all'
                   ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30 shadow-[0_0_15px_rgba(20,184,166,0.15)] scale-105'
-                  : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/30 hover:text-white hover:border-zinc-600/50 hover:scale-105'
+                  : 'bg-zinc-900/70 text-zinc-200 border border-[#a6a9d0]/25 hover:text-white hover:border-[#a6a9d0]/45 hover:scale-105'
               ]"
             >
               <span class="flex items-center gap-2">
@@ -286,7 +285,7 @@ function showOrderCount(role: Role): boolean {
                 'relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300',
                 filter === 'admins'
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-105'
-                  : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/30 hover:text-white hover:border-zinc-600/50 hover:scale-105'
+                  : 'bg-zinc-900/70 text-zinc-200 border border-[#a6a9d0]/25 hover:text-white hover:border-[#a6a9d0]/45 hover:scale-105'
               ]"
             >
               <span class="flex items-center gap-2">
@@ -310,7 +309,7 @@ function showOrderCount(role: Role): boolean {
                 'relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300',
                 filter === 'users'
                   ? 'bg-zinc-500/20 text-zinc-300 border border-zinc-500/30 shadow-[0_0_15px_rgba(161,161,170,0.1)] scale-105'
-                  : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/30 hover:text-white hover:border-zinc-600/50 hover:scale-105'
+                  : 'bg-zinc-900/70 text-zinc-200 border border-[#a6a9d0]/25 hover:text-white hover:border-[#a6a9d0]/45 hover:scale-105'
               ]"
             >
               <span class="flex items-center gap-2">
@@ -337,7 +336,7 @@ function showOrderCount(role: Role): boolean {
             <div class="w-16 h-16 border-4 border-zinc-800/50 rounded-full" />
             <div class="absolute inset-0 border-4 border-transparent border-t-teal-500 rounded-full animate-spin" />
           </div>
-          <p class="text-zinc-500 mt-4 text-sm">Cargando usuarios...</p>
+          <p class="text-zinc-300 mt-4 text-sm">Cargando usuarios...</p>
         </div>
       </div>
 
@@ -347,13 +346,13 @@ function showOrderCount(role: Role): boolean {
           <table class="w-full">
             <thead class="bg-zinc-800/50 border-b border-white/5">
               <tr>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">ID</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Usuario</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Rol</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Pedidos</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Registrado</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Acciones</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">ID</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">Usuario</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">Email</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">Rol</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">Pedidos</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">Registrado</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-zinc-200 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/[0.03]">
@@ -364,7 +363,7 @@ function showOrderCount(role: Role): boolean {
                 :style="{ animationDelay: `${0.1 + index * 0.05}s` }"
               >
                 <td class="px-6 py-4">
-                  <span class="text-zinc-600 font-mono text-sm">#{{ user.id }}</span>
+                  <span class="text-zinc-200 font-mono text-sm">#{{ user.id }}</span>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
@@ -378,7 +377,7 @@ function showOrderCount(role: Role): boolean {
                   </div>
                 </td>
                 <td class="px-6 py-4">
-                  <span class="text-zinc-400">{{ user.email }}</span>
+                  <span class="text-zinc-200">{{ user.email }}</span>
                 </td>
                 <td class="px-6 py-4">
                   <span :class="['px-2.5 py-1 rounded-lg text-xs font-medium transition-transform duration-200 hover:scale-105', roleColors[user.role]]">
@@ -386,13 +385,13 @@ function showOrderCount(role: Role): boolean {
                   </span>
                 </td>
                 <td class="px-6 py-4">
-                  <span v-if="showOrderCount(user.role)" class="text-zinc-400">
+                  <span v-if="showOrderCount(user.role)" class="text-zinc-200">
                     {{ user.orderCount }}
                   </span>
-                  <span v-else class="text-zinc-700">—</span>
+                  <span v-else class="text-zinc-400">—</span>
                 </td>
                 <td class="px-6 py-4">
-                  <span class="text-zinc-500 text-sm">{{ formatDate(user.createdAt!) }}</span>
+                  <span class="text-zinc-300 text-sm">{{ formatDate(user.createdAt!) }}</span>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity duration-200">
@@ -417,7 +416,7 @@ function showOrderCount(role: Role): boolean {
                         </svg>
                       </button>
                     </template>
-                    <span v-else class="text-zinc-600 text-xs italic px-2">Protegido</span>
+                    <span v-else class="text-zinc-400 text-xs italic px-2">Protegido</span>
                   </div>
                 </td>
               </tr>
@@ -427,10 +426,10 @@ function showOrderCount(role: Role): boolean {
 
         <!-- Table Footer -->
         <div class="px-6 py-4 bg-zinc-800/30 border-t border-white/5 flex items-center justify-between">
-          <p class="text-zinc-500 text-sm">
+          <p class="text-zinc-300 text-sm">
             Mostrando <span class="text-white font-medium">{{ filteredUsers.length }}</span> de <span class="text-white font-medium">{{ users.length }}</span> usuarios
           </p>
-          <p v-if="searchQuery" class="text-zinc-500 text-sm">
+          <p v-if="searchQuery" class="text-zinc-300 text-sm">
             Búsqueda: <span class="text-teal-400">"{{ searchQuery }}"</span>
           </p>
         </div>
@@ -441,10 +440,10 @@ function showOrderCount(role: Role): boolean {
         <div class="relative inline-block mb-6 animate-float">
           <div class="absolute inset-0 bg-teal-500/10 rounded-full blur-2xl" />
           <div class="relative w-20 h-20 bg-zinc-800/50 rounded-full flex items-center justify-center">
-            <svg v-if="searchQuery" class="w-10 h-10 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="searchQuery" class="w-10 h-10 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <svg v-else class="w-10 h-10 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-10 h-10 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
@@ -452,7 +451,7 @@ function showOrderCount(role: Role): boolean {
         <h3 class="text-xl font-semibold text-white mb-2">
           {{ searchQuery ? 'Sin resultados' : 'No hay usuarios' }}
         </h3>
-        <p class="text-zinc-500 max-w-sm mx-auto">
+        <p class="text-zinc-300 max-w-sm mx-auto">
           {{ searchQuery 
             ? `No encontramos usuarios que coincidan con "${searchQuery}"` 
             : filter === 'admins' 
@@ -482,7 +481,7 @@ function showOrderCount(role: Role): boolean {
             
             <div class="space-y-4 mb-6">
               <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-2">Nombre</label>
+                <label class="block text-sm font-medium text-zinc-200 mb-2">Nombre</label>
                 <input
                   v-model="newAdminForm.name"
                   type="text"
@@ -491,7 +490,7 @@ function showOrderCount(role: Role): boolean {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-2">Email</label>
+                <label class="block text-sm font-medium text-zinc-200 mb-2">Email</label>
                 <input
                   v-model="newAdminForm.email"
                   type="email"
@@ -500,7 +499,7 @@ function showOrderCount(role: Role): boolean {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-2">Contraseña</label>
+                <label class="block text-sm font-medium text-zinc-200 mb-2">Contraseña</label>
                 <input
                   v-model="newAdminForm.password"
                   type="password"
@@ -517,13 +516,15 @@ function showOrderCount(role: Role): boolean {
               >
                 Cancelar
               </button>
-              <button
+              <MotionButton
                 @click="createAdmin"
                 :disabled="createLoading"
-                class="flex-1 btn-primary disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {{ createLoading ? 'Creando...' : 'Crear' }}
-              </button>
+                :label="createLoading ? 'Creando...' : 'Crear'"
+                variant="primary"
+                size="md"
+                block
+                class="flex-1"
+              />
             </div>
           </div>
         </div>
@@ -537,7 +538,7 @@ function showOrderCount(role: Role): boolean {
           <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showRoleModal = false" />
           <div class="relative glass rounded-2xl p-6 sm:p-8 max-w-md w-full border border-white/10">
             <h3 class="text-xl font-bold mb-2 text-white">Editar Usuario</h3>
-            <p class="text-zinc-400 mb-6">{{ selectedUser?.name }}</p>
+            <p class="text-zinc-200 mb-6">{{ selectedUser?.name }}</p>
             
             <div class="space-y-3 mb-6">
               <label
@@ -573,12 +574,14 @@ function showOrderCount(role: Role): boolean {
               >
                 Cancelar
               </button>
-              <button
+              <MotionButton
                 @click="updateRole"
-                class="flex-1 btn-primary transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Guardar
-              </button>
+                label="Guardar"
+                variant="primary"
+                size="md"
+                block
+                class="flex-1"
+              />
             </div>
           </div>
         </div>
@@ -598,7 +601,7 @@ function showOrderCount(role: Role): boolean {
                 </svg>
               </div>
               <h3 class="text-xl font-bold mb-2 text-white">Eliminar Usuario</h3>
-              <p class="text-zinc-400">
+              <p class="text-zinc-200">
                 ¿Estás seguro de eliminar a <span class="text-white font-medium">{{ selectedUser?.name }}</span>? Esta acción no se puede deshacer.
               </p>
             </div>
@@ -625,6 +628,25 @@ function showOrderCount(role: Role): boolean {
 </template>
 
 <style scoped>
+.admin-users-page {
+  background:
+    radial-gradient(circle at 12% 10%, rgba(53, 98, 122, 0.2), transparent 34%),
+    radial-gradient(circle at 86% 14%, rgba(166, 169, 208, 0.16), transparent 32%),
+    linear-gradient(180deg, #08111a 0%, #050a11 100%);
+}
+
+.glass {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 31, 0.94), rgba(8, 18, 28, 0.84)),
+    rgba(8, 19, 29, 0.78);
+  border: 1px solid rgba(166, 169, 208, 0.3) !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+}
+
+.admin-create-btn {
+  min-width: 12rem;
+}
+
 /* Animations */
 @keyframes fade-in-up {
   from {

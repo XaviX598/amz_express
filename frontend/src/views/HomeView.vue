@@ -1,1070 +1,1070 @@
-﻿<script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
-import { navScrolled } from '@/composables/useNavScroll'
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import MotionButton from '@/components/MotionButton.vue'
 
-// Particles animation
-const particles = ref<{ id: number; left: string; delay: string; duration: string }[]>([])
+gsap.registerPlugin(ScrollTrigger)
+
+const homeRoot = ref<HTMLElement | null>(null)
+const heroSection = ref<HTMLElement | null>(null)
+const heroBackdrop = ref<HTMLElement | null>(null)
+
+const particles = ref<{ id: number; left: string; delay: string; duration: string; size: string }[]>([])
 let particleId = 0
+let ctx: gsap.Context | null = null
+
+const showDemoAccounts = import.meta.env.DEV
+const currentYear = new Date().getFullYear()
+const storySteps = [
+  { id: 'story-risk', label: 'Riesgo' },
+  { id: 'story-method', label: 'Metodo' },
+  { id: 'story-value', label: 'Ventaja' },
+  { id: 'story-trust', label: 'Confianza' },
+]
 
 function createParticles() {
-  const newParticles = []
-  for (let i = 0; i < 60; i++) {
-    newParticles.push({
-      id: particleId++,
-      left: `${Math.random() * 100}%`,
-      bottom: '-20px',
-      delay: `${Math.random() * 15}s`,
-      duration: `${8 + Math.random() * 10}s`,
-    })
-  }
-  particles.value = newParticles
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const width = window.innerWidth
+  const particleCount = reduced ? 0 : width < 768 ? 14 : 32
+
+  particles.value = Array.from({ length: particleCount }, () => ({
+    id: particleId++,
+    left: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 12}s`,
+    duration: `${10 + Math.random() * 12}s`,
+    size: `${2 + Math.random() * 4}px`,
+  }))
 }
 
-// ---------------------------------------------
-// Hero entrance + scroll-driven exit animation
-// ---------------------------------------------
-const heroScrollProgress = ref(0) // 0 = at top, 1 = past hero
+function setupAnimations() {
+  if (!homeRoot.value) return
 
-// Refs for hero elements
-const heroBadge = ref<HTMLElement | null>(null)
-const heroHeadline = ref<HTMLElement | null>(null)
-const heroSubtitle = ref<HTMLElement | null>(null)
-const heroCTAs = ref<HTMLElement | null>(null)
-const heroCard = ref<HTMLElement | null>(null)
+  ctx = gsap.context(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const mm = gsap.matchMedia()
 
-// Features section refs
-const featuresSection = ref<HTMLElement | null>(null)
-const featuresHeader = ref<HTMLElement | null>(null)
-const featureCards = ref<(HTMLElement | null)[]>([])
-
-// Testimonials section refs
-const testimonialsSection = ref<HTMLElement | null>(null)
-const testimonialsHeader = ref<HTMLElement | null>(null)
-
-// How it works section refs
-const stepsSection = ref<HTMLElement | null>(null)
-const stepsHeader = ref<HTMLElement | null>(null)
-const stepCards = ref<(HTMLElement | null)[]>([])
-
-// Delays for staggered entrance (ms)
-const ENTRANCE_DELAYS = { badge: 0, headline: 150, subtitle: 300, ctas: 450, card: 200 }
-const ENTRANCE_DURATION = 800
-
-function applyHeroStyles() {
-  const scroll = heroScrollProgress.value
-  
-  // After entrance completes, scroll-driven exit takes over
-  const exitProgress = Math.max(0, (scroll - 0.3) / 0.7) // starts exiting after 30% scroll
-  
-  // Left-side elements
-  const leftTransform = -120 * exitProgress
-  const leftOpacity = Math.max(0, 1 - exitProgress * 1.5)
-  
-  if (heroBadge.value) {
-    heroBadge.value.style.opacity = String(leftOpacity)
-    heroBadge.value.style.transform = `translateX(${leftTransform}px)`
-  }
-  if (heroHeadline.value) {
-    heroHeadline.value.style.opacity = String(leftOpacity)
-    heroHeadline.value.style.transform = `translateX(${leftTransform}px)`
-  }
-  if (heroSubtitle.value) {
-    heroSubtitle.value.style.opacity = String(leftOpacity)
-    heroSubtitle.value.style.transform = `translateX(${leftTransform}px)`
-  }
-  if (heroCTAs.value) {
-    heroCTAs.value.style.opacity = String(leftOpacity)
-    heroCTAs.value.style.transform = `translateX(${leftTransform}px)`
-  }
-  
-  // Right-side element (card)
-  const rightTransform = 120 * exitProgress
-  const rightOpacity = Math.max(0, 1 - exitProgress * 1.5)
-  if (heroCard.value) {
-    heroCard.value.style.opacity = String(rightOpacity)
-    heroCard.value.style.transform = `translateX(${rightTransform}px)`
-  }
-}
-
-// ---------------------------------------------
-// Features & Testimonials scroll-driven animation
-// ---------------------------------------------
-
-function applySectionAnimation(section: HTMLElement | null, elements: (HTMLElement | null)[], exitDirection?: 'down' | 'alternate') {
-  if (!section || !elements.length) return
-  
-  const rect = section.getBoundingClientRect()
-  const vh = window.innerHeight
-  const sectionTop = rect.top
-  const sectionHeight = rect.height
-  
-  const progress = Math.max(0, Math.min(1, (vh - sectionTop) / (vh + sectionHeight)))
-  
-  const ease = (t: number) => 1 - Math.pow(1 - t, 3)
-  const slideRange = 100
-  
-  elements.forEach((el, i) => {
-    if (!el) return
-    
-    // Stagger for entrance and exit
-    const enterStart = 0.20 + i * 0.05
-    const exitStart = 0.50 + i * 0.03 // first element exits first
-    
-    // Calculate entrance progress
-    const enterProgress = Math.max(0, Math.min(1, (progress - enterStart) / 0.25))
-    const enterOpacity = ease(enterProgress)
-    const enterY = (1 - enterOpacity) * slideRange
-    
-    // Calculate exit progress (staggered - first element exits first)
-    const exitProgress = Math.max(0, Math.min(1, (progress - exitStart) / 0.25))
-    
-    // Direction: alternate (1,3 down / 2,4 up) or all down (default)
-    let exitY: number
-    if (exitDirection === 'alternate') {
-      // Header goes up, cards alternate: 1 down, 2 up, 3 down, 4 up
-      const cardIndex = i - 1 // 0-based for cards (header is -1)
-      if (cardIndex < 0) {
-        exitY = -ease(exitProgress) * slideRange // header goes up
-      } else {
-        exitY = cardIndex % 2 === 0 
-          ? ease(exitProgress) * slideRange // odd cards go down
-          : -ease(exitProgress) * slideRange // even cards go up
-      }
-    } else {
-      exitY = ease(exitProgress) * slideRange // all go down
+    if (reduced) {
+      gsap.set('.hero-reveal, .hero-panel, .section-title, .section-subtitle, .scroll-card, .reveal-cta', { clearProps: 'all' })
+      return
     }
-    
-    // Opacity fades slower so movement is visible
-    const exitOpacity = 1 - Math.pow(exitProgress, 0.5) // fades slower than movement
-    
-    // Combine: entrance active first, exit active after 0.50
-    const opacity = progress < exitStart ? enterOpacity : exitOpacity
-    const y = progress < exitStart ? enterY : exitY
-    
-    el.style.opacity = String(opacity)
-    el.style.transform = `translateY(${y}px)`
-  })
-}
 
+    gsap.defaults({ overwrite: 'auto', force3D: true })
+    ScrollTrigger.config({ ignoreMobileResize: true })
 
-let entranceRafId: number | null = null
-let entranceStartTime: number | null = null
-const entranceComplete = ref(false)
-
-function runEntranceAnimation(timestamp: number) {
-  if (entranceStartTime === null) entranceStartTime = timestamp
-  
-  const elapsed = timestamp - entranceStartTime
-  
-  // Calculate progress for each element based on its delay
-  const progress: Record<string, number> = {}
-  for (const [key, delay] of Object.entries(ENTRANCE_DELAYS)) {
-    const elementProgress = Math.min(1, Math.max(0, (elapsed - delay) / ENTRANCE_DURATION))
-    progress[key] = easeOutCubic(elementProgress)
-  }
-  
-  // Apply entrance styles without positional offset to avoid initial layout jump
-  const stableTransform = 'translateX(0px)'
-  
-  if (heroBadge.value) {
-    heroBadge.value.style.opacity = String(progress.badge)
-    heroBadge.value.style.transform = stableTransform
-  }
-  if (heroHeadline.value) {
-    heroHeadline.value.style.opacity = String(progress.headline)
-    heroHeadline.value.style.transform = stableTransform
-  }
-  if (heroSubtitle.value) {
-    heroSubtitle.value.style.opacity = String(progress.subtitle)
-    heroSubtitle.value.style.transform = stableTransform
-  }
-  if (heroCTAs.value) {
-    heroCTAs.value.style.opacity = String(progress.ctas)
-    heroCTAs.value.style.transform = stableTransform
-  }
-  if (heroCard.value) {
-    heroCard.value.style.opacity = String(progress.card)
-    heroCard.value.style.transform = stableTransform
-  }
-  
-  // Check if animation is complete
-  const maxDelay = Math.max(...Object.values(ENTRANCE_DELAYS))
-  if (elapsed < maxDelay + ENTRANCE_DURATION) {
-    entranceRafId = requestAnimationFrame(runEntranceAnimation)
-  } else {
-    entranceRafId = null
-    entranceStartTime = null
-    entranceComplete.value = true
-  }
-}
-
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
-}
-
-// ---------------------------------------------
-// Scroll-triggered visibility (features, CTA, steps header)
-// ---------------------------------------------
-const hoveredCard = ref<string | null>(null)
-const isVisible = reactive<Record<string, boolean>>({})
-let observers: IntersectionObserver[] = []
-
-function setupIntersectionObserver() {
-  const targets = document.querySelectorAll('[data-animate]')
-  
-  targets.forEach((el) => {
-    const id = el.id
-    if (!id) return
-    isVisible[id] = false
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          isVisible[id] = entry.isIntersecting
+    const setupSharedScrollAnimations = () => {
+      const heroTimeline = gsap.timeline({ defaults: { ease: 'power3.out' } })
+      heroTimeline
+        .from('.hero-reveal', {
+          autoAlpha: 0,
+          y: 28,
+          duration: 0.8,
+          stagger: 0.1,
         })
-      },
-      { threshold: 0.15 }
-    )
-    observer.observe(el)
-    observers.push(observer)
-  })
-}
+        .from(
+          '.hero-panel',
+          {
+            autoAlpha: 0,
+            x: 28,
+            duration: 0.95,
+          },
+          '-=0.45'
+        )
+        .from(
+          '.story-indicator__item',
+          {
+            autoAlpha: 0,
+            x: 18,
+            stagger: 0.07,
+            duration: 0.35,
+            ease: 'power2.out',
+          },
+          '-=0.25'
+        )
 
-let lastScrollY = 0
+      if (heroSection.value && heroBackdrop.value) {
+        gsap.to(heroBackdrop.value, {
+          scale: 1.06,
+          yPercent: 8,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: heroSection.value,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        })
+      }
 
-function onScroll() {
-  const currentScrollY = window.scrollY
-  
-  // Hero scroll-driven animation
-  const heroHeight = window.innerHeight
-  heroScrollProgress.value = Math.min(window.scrollY / heroHeight, 1)
-  if (entranceComplete.value && heroScrollProgress.value > 0.3) {
-    applyHeroStyles()
-  }
-  
-  // Features & Testimonials scroll-driven animation
-  if (featuresSection.value && featureCards.value.length) {
-    const allFeatures = [featuresHeader.value, ...featureCards.value]
-    applySectionAnimation(featuresSection.value, allFeatures, 'alternate')
-  }
-  if (testimonialsSection.value && testimonialsHeader.value) {
-    applySectionAnimation(testimonialsSection.value, [testimonialsHeader.value])
-  }
-  if (stepsSection.value && stepsHeader.value && stepCards.value.length) {
-    const allSteps = [stepsHeader.value, ...stepCards.value]
-    applySectionAnimation(stepsSection.value, allSteps)
-  }
-}
+      const indicatorItems = gsap.utils.toArray<HTMLElement>('.story-indicator__item')
+      const setActiveIndicator = (index: number) => {
+        indicatorItems.forEach((item, itemIndex) => item.classList.toggle('is-active', itemIndex === index))
+      }
 
-onMounted(() => {
-  entranceComplete.value = false
-  // Initialize hero elements at starting position (invisible, displaced)
-  const initStyle = (el: HTMLElement | null, x: number) => {
-    if (el) {
-      el.style.opacity = '0'
-      el.style.transform = `translateX(${x}px)`
+      setActiveIndicator(0)
+
+      gsap.utils.toArray<HTMLElement>('.scroll-section').forEach((section) => {
+        const title = section.querySelector<HTMLElement>('.section-title')
+        const subtitle = section.querySelector<HTMLElement>('.section-subtitle')
+        const kicker = section.querySelector<HTMLElement>('.section-kicker')
+        const cards = gsap.utils.toArray<HTMLElement>('.scroll-card', section)
+        const sectionBg = section.querySelector<HTMLElement>('.section-bg')
+
+        if (title || subtitle || kicker) {
+          const sectionTimeline = gsap.timeline({
+            defaults: { ease: 'power2.out' },
+            scrollTrigger: {
+              trigger: section,
+              start: 'top 82%',
+              end: 'top 46%',
+              toggleActions: 'play none none reverse',
+              invalidateOnRefresh: true,
+            },
+          })
+
+          if (kicker) {
+            sectionTimeline.from(kicker, {
+              autoAlpha: 0,
+              y: 14,
+              duration: 0.5,
+            })
+          }
+
+          if (title) {
+            sectionTimeline.from(title, {
+              autoAlpha: 0,
+              y: 26,
+              duration: 0.6,
+            }, kicker ? '-=0.3' : 0)
+          }
+
+          if (subtitle) {
+            sectionTimeline.from(
+              subtitle,
+              {
+                autoAlpha: 0,
+                y: 18,
+                duration: 0.5,
+              },
+              '-=0.28'
+            )
+          }
+        }
+
+        if (cards.length) {
+          ScrollTrigger.batch(cards, {
+            start: 'top 88%',
+            once: true,
+            onEnter: (batch) => {
+              gsap.fromTo(
+                batch,
+                { autoAlpha: 0, y: 22 },
+                { autoAlpha: 1, y: 0, duration: 0.55, stagger: 0.07, ease: 'power2.out' }
+              )
+            },
+          })
+        }
+
+        if (sectionBg) {
+          gsap.fromTo(
+            sectionBg,
+            {
+              autoAlpha: 0.3,
+              scale: 1.08,
+              clipPath: 'inset(8% 0% 8% 0% round 1rem)',
+            },
+            {
+              autoAlpha: 1,
+              scale: 1,
+              clipPath: 'inset(0% 0% 0% 0% round 0rem)',
+              duration: 0.95,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: section,
+                start: 'top 80%',
+                end: 'top 38%',
+                toggleActions: 'play none none reverse',
+                invalidateOnRefresh: true,
+              },
+            }
+          )
+
+          gsap.fromTo(
+            sectionBg,
+            { yPercent: 8 },
+            {
+              yPercent: -8,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: section,
+                start: 'top bottom',
+                end: 'bottom top',
+                scrub: 0.9,
+                invalidateOnRefresh: true,
+              },
+            }
+          )
+        }
+
+        const stepIndexAttr = section.getAttribute('data-story-step')
+        if (stepIndexAttr !== null) {
+          const stepIndex = Number(stepIndexAttr)
+          ScrollTrigger.create({
+            trigger: section,
+            start: 'top 60%',
+            end: 'bottom 60%',
+            onEnter: () => setActiveIndicator(stepIndex),
+            onEnterBack: () => setActiveIndicator(stepIndex),
+          })
+        }
+      })
     }
-  }
-  initStyle(heroBadge.value, 0)
-  initStyle(heroHeadline.value, 0)
-  initStyle(heroSubtitle.value, 0)
-  initStyle(heroCTAs.value, 0)
-  initStyle(heroCard.value, 0)
-  
-  // Start entrance animation immediately to avoid first-paint flash
-  entranceStartTime = null
-  entranceRafId = requestAnimationFrame(runEntranceAnimation)
-  
+
+    mm.add('(min-width: 1024px)', () => {
+      setupSharedScrollAnimations()
+
+      gsap.to('.hero-panel', {
+        y: -10,
+        duration: 2.2,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+      })
+
+      gsap.to('.orb-a', {
+        yPercent: 12,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: homeRoot.value,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+          invalidateOnRefresh: true,
+        },
+      })
+
+      gsap.to('.orb-b', {
+        yPercent: -10,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: homeRoot.value,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+          invalidateOnRefresh: true,
+        },
+      })
+
+      gsap.to('.orb-c', {
+        yPercent: 8,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: homeRoot.value,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+          invalidateOnRefresh: true,
+        },
+      })
+    })
+
+    mm.add('(max-width: 1023px)', () => {
+      setupSharedScrollAnimations()
+
+      gsap.to('.hero-panel', {
+        y: -6,
+        duration: 2.4,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+      })
+    })
+
+    ScrollTrigger.refresh()
+    return () => mm.revert()
+  }, homeRoot.value)
+}
+
+onMounted(async () => {
   createParticles()
-  setupIntersectionObserver()
-  lastScrollY = window.scrollY
-  window.addEventListener('scroll', onScroll, { passive: true })
-  onScroll()
+  await nextTick()
+  setupAnimations()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll)
-  observers.forEach((obs) => obs.disconnect())
-  observers = []
-  if (entranceRafId !== null) cancelAnimationFrame(entranceRafId)
+  if (ctx) {
+    ctx.revert()
+    ctx = null
+  }
 })
+
+const painPoints = [
+  {
+    title: 'Costos inciertos',
+    description: 'Evita comprar sin saber el total final. Antes de pagar ya tienes tu proyeccion completa.',
+  },
+  {
+    title: 'Falta de visibilidad',
+    description: 'Con seguimiento por etapas sabes si tu pedido esta en compra, transito o entrega.',
+  },
+  {
+    title: 'Soporte tardio',
+    description: 'Te respondemos por WhatsApp con personas reales cuando necesitas decidir rapido.',
+  },
+]
 
 const features = [
   {
-    title: 'Precios Transparentes',
-    description: 'Sin costos ocultos. Sabes exactamente cuánto pagarás antes de confirmar.',
+    title: 'Cotizacion inmediata',
+    description: 'Simula el total de importacion en segundos con producto, peso y recargos.',
     icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z',
-    color: 'teal',
   },
   {
-    title: 'Envío Seguro',
-    description: 'Tu producto viaja asegurado desde Estados Unidos hasta tu puerta.',
+    title: 'Operacion segura',
+    description: 'Tu compra viaja protegida desde Estados Unidos hasta Ecuador.',
     icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
-    color: 'blue',
   },
   {
-    title: 'Tracking en Tiempo Real',
-    description: 'Seguimiento paso a paso de tu pedido desde que lo compras.',
+    title: 'Estado del pedido',
+    description: 'Visualiza tu progreso y manten el control sin llamadas ni correos innecesarios.',
     icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
-    color: 'purple',
   },
   {
-    title: 'Atención Personalizada',
-    description: 'WhatsApp directo para resolver cualquier duda o consulta.',
+    title: 'Acompanamiento humano',
+    description: 'Nuestro equipo te ayuda en cada decision clave durante el proceso.',
     icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
-    color: 'orange',
   },
 ]
 
 const steps = [
   {
     number: '01',
-    title: 'Encuentra un producto',
-    description: 'Busca en Amazon el producto que quieres importar.',
+    title: 'Comparte tu producto',
+    description: 'Toma el precio en Amazon y define el peso aproximado del paquete.',
   },
   {
     number: '02',
-    title: 'Ingresa los datos',
-    description: 'Ingresa el precio y el peso del producto en nuestra calculadora.',
+    title: 'Recibe tu cotizacion',
+    description: 'Calculamos producto, impuestos, aduana, manejo y envio.',
   },
   {
     number: '03',
-    title: 'Confirma tu pedido',
-    description: 'Una vez aprobado el precio, nosotros lo compramos por ti.',
+    title: 'Confirma con soporte',
+    description: 'Aseguramos datos, pagos y detalles de recepcion antes del despacho.',
   },
   {
     number: '04',
-    title: 'Recibe en casa',
-    description: 'Te notificamos cuando llegue y coordinamos la entrega.',
+    title: 'Recibe en Ecuador',
+    description: 'Te entregamos por el metodo coordinado y con seguimiento activo.',
   },
+]
+
+const metrics = [
+  { value: '24h', label: 'respuesta inicial promedio' },
+  { value: '100%', label: 'costos visibles antes de confirmar' },
+  { value: '1 panel', label: 'seguimiento por etapas del pedido' },
 ]
 
 const testimonials = [
   {
-    name: 'maria fernandez',
-    initials: 'mf',
-    location: 'guayaquil',
-    rating: 5,
-    text: 'Importé un macbook pro desde usa y llegó en 12 días a mi oficina. me mandaban tracking en cada paso, ni un detalle fuera de lugar.',
-    avatarBg: 'bg-gradient-to-br from-teal-500 to-teal-600',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    name: 'Maria Fernandez',
+    location: 'Guayaquil',
+    text: 'Importe una laptop y todo llego en excelente estado. El seguimiento me dio mucha tranquilidad.',
   },
   {
-    name: 'carlos mendez',
-    initials: 'cm',
-    location: 'quito',
-    rating: 5,
-    text: 'pensé que la aduana iba a ser un problema pero me lo explican todo antes de confirmar. terminé pagando menos de lo que había calculado.',
-    avatarBg: 'bg-gradient-to-br from-teal-400 to-teal-600',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    name: 'Carlos Mendez',
+    location: 'Quito',
+    text: 'El proceso fue claro de inicio a fin. Tome decisiones con numeros, no con suposiciones.',
   },
   {
-    name: 'valentina solis',
-    initials: 'vs',
-    location: 'cuenca',
-    rating: 5,
-    text: 'le compré una dyson a mi mama y llegó muy bien embalada. el tracking en tiempo real te mantiene tranquila. ya hice otro pedido.',
-    avatarBg: 'bg-gradient-to-br from-teal-500 to-emerald-600',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    name: 'Valentina Solis',
+    location: 'Cuenca',
+    text: 'Mi pedido llego rapido y bien protegido. La atencion por WhatsApp fue clave.',
+  },
+]
+
+const faqs = [
+  {
+    question: 'Que incluye la cotizacion?',
+    answer: 'Incluye valor del producto, impuestos, manejo, envio y aduana para que conozcas el total estimado antes de comprar.',
   },
   {
-    name: 'andres reyes',
-    initials: 'ar',
-    location: 'ambato',
-    rating: 5,
-    text: 'Soy fotógrafo y necesitaba un objetivo sony. vino asegurado y llegó sin un rasguño. el cargo por manejo es muy bueno comparado con otros.',
-    avatarBg: 'bg-gradient-to-br from-teal-600 to-teal-700',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    question: 'Puedo rastrear mi pedido?',
+    answer: 'Si. Veras cada etapa principal y recibiras actualizaciones para saber exactamente donde va tu compra.',
   },
   {
-    name: 'daniela torres',
-    initials: 'dt',
-    location: 'manta',
-    rating: 4,
-    text: 'pedí ropa y accesorios. tardó 15 días porque eran fiestas, pero me mantenían al tanto de todo. volvería a pedir sin problemas.',
-    avatarBg: 'bg-gradient-to-br from-teal-400 to-teal-500',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    question: 'Como me contacto con soporte?',
+    answer: 'Puedes escribirnos por WhatsApp y recibiras acompanamiento humano para dudas, cambios y coordinacion de entrega.',
+  },
+]
+
+const demoAccounts = [
+  {
+    role: 'SuperAdmin',
+    color: 'yellow',
+    email: 'admin@amzexpress.com',
+    password: 'SuperAdmin123!',
   },
   {
-    name: 'sebastian ochoa',
-    initials: 'so',
-    location: 'loja',
-    rating: 5,
-    text: 'importé piezas de electrónica para mi emprendimiento. me ayudaron con la declaración y todo entró bien por aduana. muy profesionales.',
-    avatarBg: 'bg-gradient-to-br from-teal-500 to-teal-600',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    role: 'Admin',
+    color: 'teal',
+    email: 'admin.soporte@amzexpress.com',
+    password: 'Admin123!',
   },
   {
-    name: 'gabriela gutierrez',
-    initials: 'gg',
-    location: 'esmeraldas',
-    rating: 5,
-    text: 'me compré unos audífonos bose que en Ecuador salen el doble. tardó como 10 días, llegó en perfecto estado.',
-    avatarBg: 'bg-gradient-to-br from-teal-600 to-teal-700',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
-  },
-  {
-    name: 'pablo villalba',
-    initials: 'pv',
-    location: 'tulcán',
-    rating: 5,
-    text: 'mandé a traer un drone dji. venía con seguro y todo. no me preocupé, me llegó a la puerta de mi casa. la atención por whatsapp es directa y clara.',
-    avatarBg: 'bg-gradient-to-br from-teal-500 to-teal-600',
-    accentColor: 'bg-teal-500',
-    amazonBadge: 'text-teal-400/80 border-teal-500/20 bg-teal-500/10',
+    role: 'Usuario',
+    color: 'blue',
+    email: 'usuario@amzexpress.com',
+    password: 'Usuario123!',
   },
 ]
 </script>
 
 <template>
-  <div class="relative pb-16">
-    <!-- Hero Section — navbar lives inside so it blends with hero -->
-    <section class="relative min-h-screen flex items-center overflow-hidden">
-      <!-- Warehouse Background Image -->
-      <div 
-        class="absolute inset-0 w-full h-full z-[0] bg-cover bg-center bg-no-repeat"
+  <div ref="homeRoot" class="home-root relative overflow-hidden">
+    <nav class="story-indicator hidden xl:flex" aria-label="Progreso de historia">
+      <a
+        v-for="(step, index) in storySteps"
+        :key="step.id"
+        :href="`#${step.id}`"
+        class="story-indicator__item"
+        :data-story-link="index"
+      >
+        <span class="story-indicator__dot" />
+        <span class="story-indicator__label">{{ step.label }}</span>
+      </a>
+    </nav>
+
+    <div class="ambient-layer pointer-events-none absolute inset-0 z-0">
+      <div class="orb orb-a" />
+      <div class="orb orb-b" />
+      <div class="orb orb-c" />
+    </div>
+
+    <section ref="heroSection" class="hero relative min-h-screen flex items-center overflow-hidden">
+      <div
+        ref="heroBackdrop"
+        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style="background-image: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80');"
       />
-      <!-- Dark Overlay -->
-      <div class="absolute inset-0 w-full h-full z-[1]" style="background-color: rgba(10, 10, 10, 0.97);" />
-      <!-- Particles -->
-      <div class="particles-container absolute inset-0 w-full h-full z-[2] pointer-events-none overflow-hidden">
+      <div class="hero-overlay absolute inset-0" />
+
+      <div class="particles pointer-events-none absolute inset-0">
         <div
-          v-for="particle in particles"
-          :key="particle.id"
+          v-for="p in particles"
+          :key="p.id"
           class="particle"
           :style="{
-            left: particle.left,
-            bottom: particle.bottom,
-            animationDelay: particle.delay,
-            animationDuration: particle.duration,
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
           }"
         />
       </div>
 
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-20">
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <!-- Left Side - Text -->
+      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-20 pb-16">
+        <div class="grid lg:grid-cols-[1.2fr,0.8fr] gap-10 lg:gap-14 items-center">
           <div>
-            <span ref="heroBadge" class="badge inline-flex items-center px-4 py-1.5 text-teal-400 rounded-full text-sm font-display tracking-widest mb-6 border border-teal-500/20 uppercase badge-pulse">
-              <span class="w-2 h-2 bg-teal-400 rounded-full mr-2" />
-              Importación simplificada
+            <span class="hero-reveal inline-flex items-center px-4 py-1.5 rounded-full text-xs sm:text-sm uppercase tracking-[0.18em] text-teal-200 bg-teal-500/15 border border-teal-400/30">
+              Importaciones Amazon para Ecuador
             </span>
-            <h1 ref="heroHeadline" class="headline font-display text-5xl sm:text-6xl lg:text-7xl xl:text-8xl mb-6 leading-none tracking-wide text-white">
-              Tu tienda 
-              <span class="gradient-text">Amazon</span> 
-              en Ecuador
+            <h1 class="hero-reveal mt-6 font-display text-5xl sm:text-6xl xl:text-7xl leading-[0.95] text-white tracking-wide">
+              Del caos de importar
+              <span class="gradient-text">al control total</span>
             </h1>
-            <p ref="heroSubtitle" class="subtitle text-lg sm:text-xl text-zinc-300 mb-10 leading-relaxed max-w-xl font-display tracking-wide">
-              Importa productos de Estados Unidos sin complicaciones. 
-              Precios claros, envío seguro y tracking en tiempo real.
+            <p class="hero-reveal mt-6 text-lg text-zinc-300 max-w-2xl tracking-wide">
+              Cotiza con claridad, confirma con soporte humano y recibe en Ecuador con seguimiento real.
+              Convertimos una compra incierta en un proceso predecible.
             </p>
-            <div ref="heroCTAs" class="ctas flex flex-wrap gap-4">
-              <RouterLink 
-                to="/calculadora" 
-                class="btn-primary font-display text-base px-6 py-3 rounded-xl inline-flex items-center group tracking-wider"
-              >
-                Cotiza tu pedido
-                <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </RouterLink>
-              <RouterLink 
-                to="/register" 
-                class="btn-outline font-display text-base px-6 py-3 rounded-xl tracking-wider"
-              >
-                Crear Cuenta
-              </RouterLink>
+
+            <div class="hero-reveal mt-8 flex flex-wrap gap-3">
+              <MotionButton to="/calculadora" label="Cotizar ahora" variant="primary" size="lg" />
+              <MotionButton to="/register" label="Crear cuenta gratis" variant="secondary" size="lg" />
+            </div>
+
+            <div class="hero-reveal mt-7 flex flex-wrap gap-3 text-sm">
+              <span class="service-pill">Precios transparentes</span>
+              <span class="service-pill">Tracking por etapas</span>
+              <span class="service-pill">Soporte por WhatsApp</span>
             </div>
           </div>
 
-          <!-- Right Side - Calculation Example -->
-          <div class="hidden lg:block">
-            <div class="relative">
-              <div class="absolute -inset-4 bg-gradient-to-r from-teal-500/20 to-teal-600/10 rounded-3xl blur-2xl" />
-              <div ref="heroCard" class="card relative glass rounded-2xl p-8 border border-white/10">
-                <div class="flex items-center space-x-4 mb-6">
-                  <div class="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p class="text-zinc-500 text-sm font-display tracking-wider uppercase">Ejemplo de cálculo</p>
-                    <p class="text-2xl font-display tracking-wider text-white">$156.50 USD</p>
-                  </div>
-                </div>
-                <div class="space-y-3 text-sm">
-                  <div class="flex justify-between text-zinc-400">
-                    <span class="font-display tracking-wide">Producto</span>
-                    <span class="text-white font-display tracking-wider">$100.00</span>
-                  </div>
-                  <div class="flex justify-between text-zinc-400">
-                    <span class="font-display tracking-wide">Impuestos (15%)</span>
-                    <span class="text-white font-display tracking-wider">$15.00</span>
-                  </div>
-                  <div class="flex justify-between text-zinc-400">
-                    <span class="font-display tracking-wide">Cargo por manejo (9.27%)</span>
-                    <span class="text-white font-display tracking-wider">$9.27</span>
-                  </div>
-                  <div class="flex justify-between text-zinc-400">
-                    <span class="font-display tracking-wide">Envío (3 lbs)</span>
-                    <span class="text-white font-display tracking-wider">$15.00</span>
-                  </div>
-                  <div class="flex justify-between text-zinc-400">
-                    <span class="font-display tracking-wide">Aduana</span>
-                    <span class="text-white font-display tracking-wider">$21.00</span>
-                  </div>
-                  <div class="border-t border-white/10 pt-3 flex justify-between font-display text-xl tracking-wider">
-                    <span class="text-white">Total</span>
-                    <span class="text-teal-400">$155.27</span>
-                  </div>
-                </div>
+          <div class="hero-panel relative">
+            <div class="panel-glow" />
+            <div class="panel-card hero-panel-card relative rounded-2xl border border-white/20 bg-zinc-900/82 backdrop-blur-xl p-7">
+              <p class="text-teal-300 text-sm tracking-[0.16em] uppercase mb-4">Ruta de compra recomendada</p>
+              <div class="space-y-3 text-sm">
+                <div class="row"><span>1. Cotiza en 60 segundos</span><strong>Rapido</strong></div>
+                <div class="row"><span>2. Valida costos reales</span><strong>Claro</strong></div>
+                <div class="row"><span>3. Confirma con soporte</span><strong>Seguro</strong></div>
+                <div class="row"><span>4. Recibe en Ecuador</span><strong>Simple</strong></div>
+                <div class="row total"><span>Resultado</span><strong>Menos riesgo al importar</strong></div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Scroll Indicator - inside hero, below content -->
-      <div class="absolute bottom-[100px] left-1/2 -translate-x-1/2 hero-scroll-indicator z-30">
-        <svg class="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      </div>
-    </section>
-
-    <!-- Features Section -->
-    <section ref="featuresSection" class="py-24 sm:py-32 relative z-10">
-      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-900/50 to-transparent pointer-events-none" />
-      
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Section Header -->
-        <div 
-          ref="featuresHeader"
-          id="features-header"
-          class="text-center mb-20"
-        >
-          <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl mb-6 tracking-wide">
-            ¿Por qué elegirnos?
-          </h2>
-          <p class="text-lg text-zinc-400 max-w-2xl mx-auto font-display tracking-wide">
-            Hacemos que importar desde Amazon sea simple y seguro
-          </p>
-        </div>
-        
-        <!-- Feature Cards -->
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div
-            v-for="(feature, index) in features"
-            :key="feature.title"
-            :ref="(el) => { if (el) featureCards[index] = el as HTMLElement }"
-            class="feature-card group relative rounded-2xl border border-white/5 bg-zinc-900/50 backdrop-blur-sm cursor-pointer overflow-hidden"
-            :class="[
-              hoveredCard === feature.title ? 'expanded' : ''
-            ]"
-            :style="{
-              maxHeight: hoveredCard === feature.title ? '300px' : '160px',
-            }"
-            @mouseenter="hoveredCard = feature.title"
-            @mouseleave="hoveredCard = null"
-          >
-            <!-- Hover border glow -->
-            <div :class="[
-              'absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300',
-              hoveredCard === feature.title ? 'opacity-100' : 'opacity-0',
-              feature.color === 'teal' ? 'shadow-[inset_0_0_40px_rgba(20,184,166,0.15),inset_0_0_1px_rgba(20,184,166,0.5)]' : '',
-              feature.color === 'blue' ? 'shadow-[inset_0_0_40px_rgba(59,130,246,0.15),inset_0_0_1px_rgba(59,130,246,0.5)]' : '',
-              feature.color === 'purple' ? 'shadow-[inset_0_0_40px_rgba(168,85,247,0.15),inset_0_0_1px_rgba(168,85,247,0.5)]' : '',
-              feature.color === 'orange' ? 'shadow-[inset_0_0_40px_rgba(249,115,22,0.15),inset_0_0_1px_rgba(249,115,22,0.5)]' : '',
-            ]" />
-            
-            <!-- Card content -->
-            <div class="relative p-8 h-full flex flex-col">
-              <!-- Icon -->
-              <div :class="[
-                'w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300',
-                hoveredCard === feature.title ? 'scale-110' : 'scale-100',
-                feature.color === 'teal' ? 'bg-teal-500/10 text-teal-400' : '',
-                feature.color === 'blue' ? 'bg-blue-500/10 text-blue-400' : '',
-                feature.color === 'purple' ? 'bg-purple-500/10 text-purple-400' : '',
-                feature.color === 'orange' ? 'bg-orange-500/10 text-orange-400' : '',
-              ]">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="feature.icon" />
-                </svg>
-              </div>
-              
-              <!-- Title -->
-              <h3 :class="[
-                'font-display text-xl mb-2 tracking-wider transition-colors duration-300',
-                feature.color === 'teal' ? 'text-teal-400' : '',
-                feature.color === 'blue' ? 'text-blue-400' : '',
-                feature.color === 'purple' ? 'text-purple-400' : '',
-                feature.color === 'orange' ? 'text-orange-400' : '',
-              ]">
-                {{ feature.title }}
-              </h3>
-              
-              <!-- Description (appears on hover) -->
-                <p 
-                  class="text-zinc-400 leading-relaxed text-sm transition-all duration-300 overflow-hidden font-display tracking-wide"
-                  :style="{
-                    maxHeight: hoveredCard === feature.title ? '100px' : '0px',
-                    opacity: hoveredCard === feature.title ? 1 : 0,
-                    marginTop: hoveredCard === feature.title ? '12px' : '0px',
-                  }"
-                >
-                  {{ feature.description }}
-                </p>
-              
-              <!-- Expand indicator -->
-              <div :class="[
-                'mt-auto flex items-center gap-2 text-sm transition-all duration-300',
-                hoveredCard === feature.title ? 'text-zinc-300 opacity-100' : 'text-zinc-500 opacity-60'
-              ]">
-                <span class="font-display tracking-wider">{{ hoveredCard === feature.title ? 'Ocultar' : 'Ver más' }}</span>
-                <svg :class="[
-                  'w-4 h-4 transition-transform duration-300',
-                  hoveredCard === feature.title ? '-translate-x-1' : 'translate-x-0'
-                ]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-                </svg>
-              </div>
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-3">
+              <article v-for="metric in metrics" :key="metric.label" class="scroll-card hero-metric-card rounded-xl border border-white/20 bg-zinc-900/72 p-3">
+                <p class="text-teal-300 text-xl font-display tracking-wide">{{ metric.value }}</p>
+                <p class="text-zinc-400 text-xs leading-snug">{{ metric.label }}</p>
+              </article>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- How it works Section -->
-    <section ref="stepsSection" class="py-24 sm:py-32 relative z-10 overflow-hidden">
-      <!-- Animated background line -->
-      <div class="absolute top-1/2 left-0 w-full h-px pointer-events-none">
-        <div 
-          class="h-full bg-gradient-to-r from-transparent via-teal-500/30 to-transparent"
-          :style="{
-            transform: 'scaleX(1)',
-            transition: 'transform 1s ease-out'
-          }"
-        />
-      </div>
-      
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Section Header -->
-        <div 
-          ref="stepsHeader"
-          id="steps-header"
-          class="text-center mb-20"
-        >
-          <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
-            ¿Cómo funciona?
-          </h2>
-          <p class="text-lg text-zinc-400 max-w-2xl mx-auto">
-            En solo 4 pasos recibe tu producto en Ecuador
+    <section id="story-risk" data-story-step="0" class="scroll-section reveal-section relative z-10 py-24 sm:py-28">
+      <div class="section-bg section-bg-crimson" />
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+          <p class="section-kicker uppercase tracking-[0.2em] text-xs text-rose-300">Fase 01 - Riesgo</p>
+          <h2 class="section-title font-display text-4xl sm:text-5xl text-white">Donde mas se complica importar</h2>
+          <p class="section-subtitle mt-4 text-zinc-400 max-w-3xl mx-auto">
+            Si no conoces costos, tiempos ni responsables, terminas comprando a ciegas. Por eso estructuramos todo en un flujo guiado.
           </p>
         </div>
 
-        <!-- Steps -->
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          <div
-            v-for="(step, index) in steps"
-            :key="step.number"
-            :ref="(el) => { if (el) stepCards[index] = el as HTMLElement }"
-            class="step-card group relative"
-          >
-            <!-- Connector line (desktop only) -->
-            <div 
-              v-if="index < steps.length - 1"
-              class="hidden lg:block absolute top-[42px] left-[60px] right-[-48px] h-0.5 z-10 overflow-hidden"
-            >
-              <div 
-                class="h-full bg-gradient-to-r from-teal-500 to-teal-500/30"
-                style="transform: scaleX(1); transform-origin: left; transition: transform 0.5s ease-out;"
-              />
-            </div>
-            
-            <!-- Step circle -->
-            <div class="relative inline-flex lg:flex items-center justify-center mb-6">
-              <!-- Glow effect -->
-              <div 
-                class="absolute inset-0 w-24 h-24 bg-teal-500/20 rounded-full blur-xl"
-              />
-              
-              <!-- Circle -->
-              <div 
-                class="relative w-20 h-20 rounded-full bg-zinc-900/90 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(20,184,166,0.3)]"
-                style="border: 2px solid rgba(20, 184, 166, 0.5);"
-              >
-                <!-- Number -->
-                <span 
-                  class="text-3xl font-bold transition-all duration-500"
-                  style="color: #14b8a6;"
-                >
-                  {{ step.number }}
-                </span>
-              </div>
-            </div>
-            
-            <!-- Content -->
-            <div class="text-center lg:text-left">
-              <h3 class="font-display text-2xl mb-3 tracking-wide text-white transition-colors duration-300 group-hover:text-teal-400">
-                {{ step.title }}
-              </h3>
-              <p class="text-zinc-400 leading-relaxed transition-colors duration-300 group-hover:text-zinc-300 font-display tracking-wide">
-                {{ step.description }}
-              </p>
-            </div>
-          </div>
+        <div class="cards-grid grid md:grid-cols-3 gap-5">
+          <article v-for="pain in painPoints" :key="pain.title" class="reveal-card scroll-card interactive-card pain-card rounded-2xl p-6 border border-white/10 bg-zinc-900/60">
+            <h3 class="text-xl font-display text-white tracking-wide">{{ pain.title }}</h3>
+            <p class="mt-2 text-zinc-400 text-sm leading-relaxed">{{ pain.description }}</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- Testimonials Banner Section -->
-    <section ref="testimonialsSection" class="py-20 sm:py-28 relative z-10 overflow-hidden">
-      <!-- Top fade gradient -->
-      <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-zinc-900/80 to-transparent pointer-events-none z-10" />
-      
-      <!-- Bottom fade gradient -->
-      <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-900/80 to-transparent pointer-events-none z-10" />
-      
-      <div class="relative">
-        <!-- Header -->
-        <div ref="testimonialsHeader" class="text-center mb-12 px-4">
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 text-amber-400 rounded-full text-sm font-medium mb-5 border border-amber-500/20">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            opiniones de nuestro trabajo
-          </div>
-          <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white/90 tracking-wide">
-            Lo que dicen de nosotros
-          </h2>
+    <section id="story-method" data-story-step="1" class="scroll-section reveal-section relative z-10 py-20 sm:py-24">
+      <div class="section-bg section-bg-cyan" />
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+          <p class="section-kicker uppercase tracking-[0.2em] text-xs text-cyan-300">Fase 02 - Metodo</p>
+          <h2 class="section-title font-display text-4xl sm:text-5xl text-white">Como funciona</h2>
+          <p class="section-subtitle mt-4 text-zinc-400 max-w-2xl mx-auto">Seguimos un sistema en 4 pasos para evitar improvisaciones.</p>
         </div>
 
-        <!-- Carousel -->
-        <div class="relative carousel-wrapper">
-          <div class="carousel-track">
-            <!-- First set -->
-            <div
-              v-for="(t, i) in testimonials"
-              :key="`a-${i}`"
-              class="carousel-card group"
-            >
-              <div class="relative bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-white/5 p-6 sm:p-7 mx-3 overflow-hidden transition-all duration-300 hover:border-teal-500/30 hover:bg-zinc-900/95 hover:shadow-[0_0_40px_rgba(20,184,166,0.08)]">
-                <!-- Accent top bar -->
-                <div :class="['absolute top-0 left-0 right-0 h-1 rounded-t-2xl', t.accentColor]" />
-                
-                <!-- Stars -->
-                <div class="flex items-center gap-0.5 mb-4">
-                  <svg
-                    v-for="star in 5"
-                    :key="star"
-                    class="w-4 h-4"
-                    :class="star <= t.rating ? 'text-amber-400' : 'text-zinc-700'"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                </div>
-
-                <!-- Text -->
-                <p class="text-zinc-300 text-sm sm:text-base leading-relaxed mb-6 italic font-display tracking-wide">
-                  "{{ t.text }}"
-                </p>
-
-                <!-- Author -->
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <div class="relative">
-                      <div :class="[
-                        'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs ring-2 ring-offset-1 ring-offset-zinc-900',
-                        t.avatarBg
-                      ]">
-                        {{ t.initials }}
-                      </div>
-                      <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center ring-1 ring-zinc-900">
-                        <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                        </svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p class="font-display text-base tracking-wider text-white">{{ t.name }}</p>
-                      <p class="text-zinc-500 text-xs font-display tracking-wider uppercase">{{ t.location }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Duplicate set for seamless loop -->
-            <div
-              v-for="(t, i) in testimonials"
-              :key="`b-${i}`"
-              class="carousel-card group"
-              aria-hidden="true"
-            >
-              <div class="relative bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-white/5 p-6 sm:p-7 mx-3 overflow-hidden transition-all duration-300 hover:border-teal-500/30 hover:bg-zinc-900/95">
-                <div :class="['absolute top-0 left-0 right-0 h-1 rounded-t-2xl', t.accentColor]" />
-                <div class="flex items-center gap-0.5 mb-4">
-                  <svg
-                    v-for="star in 5"
-                    :key="star"
-                    class="w-4 h-4"
-                    :class="star <= t.rating ? 'text-amber-400' : 'text-zinc-700'"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                </div>
-                <p class="text-zinc-300 text-sm sm:text-base leading-relaxed mb-6 italic font-display tracking-wide">
-                  "{{ t.text }}"
-                </p>
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <div class="relative">
-                      <div :class="[
-                        'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs ring-2 ring-offset-1 ring-offset-zinc-900',
-                        t.avatarBg
-                      ]">
-                        {{ t.initials }}
-                      </div>
-                      <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center ring-1 ring-zinc-900">
-                        <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                        </svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p class="font-display text-base tracking-wider text-white">{{ t.name }}</p>
-                      <p class="text-zinc-500 text-xs font-display tracking-wider uppercase">{{ t.location }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom CTA -->
-        <div class="text-center mt-14 px-4">
-          <RouterLink 
-            to="/calculadora"
-            class="group inline-flex items-center gap-3 bg-white text-teal-600 font-display text-lg px-8 py-3 rounded-xl transition-all duration-300 hover:bg-zinc-900 hover:text-white hover:scale-[1.02]"
-          >
-            Cotiza tu pedido
-            <svg class="w-5 h-5 transition-transform group-hover:translate-x-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </RouterLink>
-          <p class="mt-4 text-zinc-500 text-sm font-display tracking-wider">Sin compromiso · Respuesta en menos de 24hs</p>
+        <div class="cards-grid grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <article v-for="step in steps" :key="step.number" class="reveal-card scroll-card interactive-card step-card rounded-2xl p-6 border border-teal-500/20 bg-zinc-900/60">
+            <div class="step-number">{{ step.number }}</div>
+            <h3 class="mt-4 text-xl font-display text-white">{{ step.title }}</h3>
+            <p class="mt-2 text-zinc-400 text-sm">{{ step.description }}</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- Test Credentials Section -->
-    <section class="py-16 bg-zinc-900/50">
+    <section id="story-value" data-story-step="2" class="scroll-section reveal-section relative z-10 py-24 sm:py-28">
+      <div class="section-bg section-bg-teal" />
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+          <p class="section-kicker uppercase tracking-[0.2em] text-xs text-teal-300">Fase 03 - Ventaja</p>
+          <h2 class="section-title font-display text-4xl sm:text-5xl text-white">Por que AMZ Express</h2>
+          <p class="section-subtitle mt-4 text-zinc-400 max-w-2xl mx-auto">
+            Combinamos experiencia operativa, tecnologia y atencion humana para que compres mejor.
+          </p>
+        </div>
+
+        <div class="cards-grid grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <article v-for="feature in features" :key="feature.title" class="reveal-card scroll-card interactive-card feature-card rounded-2xl p-6 border border-white/10 bg-zinc-900/60">
+            <div class="icon-wrap">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="feature.icon" />
+              </svg>
+            </div>
+            <h3 class="mt-4 text-xl font-display text-white tracking-wide">{{ feature.title }}</h3>
+            <p class="mt-2 text-zinc-400 text-sm leading-relaxed">{{ feature.description }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="story-trust" data-story-step="3" class="scroll-section reveal-section relative z-10 py-20 sm:py-24">
+      <div class="section-bg section-bg-amber" />
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+          <p class="section-kicker uppercase tracking-[0.2em] text-xs text-amber-300">Fase 04 - Confianza</p>
+          <h2 class="section-title font-display text-4xl sm:text-5xl text-white">Confianza construida en resultados</h2>
+          <p class="section-subtitle mt-4 text-zinc-400 max-w-3xl mx-auto">
+            Clientes en Ecuador nos eligen por claridad de costos, acompanamiento y cumplimiento.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 mb-8">
+          <article v-for="metric in metrics" :key="`trust-${metric.label}`" class="scroll-card interactive-card rounded-xl border border-white/10 bg-zinc-900/60 p-5 text-center">
+            <p class="text-white text-3xl font-display tracking-wide">{{ metric.value }}</p>
+            <p class="text-zinc-400 text-sm mt-2">{{ metric.label }}</p>
+          </article>
+        </div>
+
+        <div class="cards-grid grid md:grid-cols-3 gap-5">
+          <article v-for="t in testimonials" :key="t.name" class="reveal-card scroll-card interactive-card testimonial-card rounded-2xl p-6 border border-white/10 bg-zinc-900/65">
+            <p class="text-zinc-300 italic leading-relaxed">"{{ t.text }}"</p>
+            <div class="mt-5">
+              <p class="text-white font-display tracking-wide">{{ t.name }}</p>
+              <p class="text-zinc-500 text-sm">{{ t.location }}</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="scroll-section reveal-section relative z-10 py-20 sm:py-24">
+      <div class="section-bg section-bg-teal-soft" />
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+          <p class="section-kicker uppercase tracking-[0.2em] text-xs text-teal-300">Desbloquea objeciones</p>
+          <h2 class="section-title font-display text-4xl sm:text-5xl text-white">Preguntas frecuentes</h2>
+          <p class="section-subtitle mt-4 text-zinc-400">Respuestas rapidas para avanzar con seguridad.</p>
+        </div>
+
+        <div class="space-y-3">
+          <details v-for="faq in faqs" :key="faq.question" class="scroll-card interactive-card faq-card rounded-xl border border-white/10 bg-zinc-900/60 p-5">
+            <summary class="cursor-pointer text-white font-display tracking-wide text-xl">{{ faq.question }}</summary>
+            <p class="mt-3 text-zinc-400 leading-relaxed">{{ faq.answer }}</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="showDemoAccounts" class="scroll-section reveal-section relative z-10 py-14 bg-zinc-900/40">
+      <div class="section-bg section-bg-cyan-soft" />
       <div class="max-w-4xl mx-auto px-4">
-        <h2 class="text-2xl font-display font-bold text-white text-center mb-8">Cuentas de Prueba</h2>
-        <div class="grid md:grid-cols-3 gap-4">
-          <!-- SuperAdmin -->
-          <div class="bg-zinc-800/50 rounded-xl p-4 border border-yellow-500/30">
-            <p class="text-yellow-400 font-semibold mb-2">SuperAdmin</p>
-            <p class="text-zinc-300 text-sm">Email: <span class="text-white">admin@amzexpress.com</span></p>
-            <p class="text-zinc-300 text-sm">Password: <span class="text-white">SuperAdmin123!</span></p>
-          </div>
-          <!-- Admin -->
-          <div class="bg-zinc-800/50 rounded-xl p-4 border border-teal-500/30">
-            <p class="text-teal-400 font-semibold mb-2">Admin</p>
-            <p class="text-zinc-300 text-sm">Email: <span class="text-white">admin.soporte@amzexpress.com</span></p>
-            <p class="text-zinc-300 text-sm">Password: <span class="text-white">Admin123!</span></p>
-          </div>
-          <!-- Usuario Normal -->
-          <div class="bg-zinc-800/50 rounded-xl p-4 border border-blue-500/30">
-            <p class="text-blue-400 font-semibold mb-2">Usuario</p>
-            <p class="text-zinc-300 text-sm">Email: <span class="text-white">usuario@amzexpress.com</span></p>
-            <p class="text-zinc-300 text-sm">Password: <span class="text-white">Usuario123!</span></p>
+        <h2 class="section-title text-2xl font-display text-white text-center mb-3">Entorno local de pruebas</h2>
+        <p class="section-subtitle text-center text-zinc-500 text-sm mb-8">Credenciales visibles solo en modo desarrollo.</p>
+
+        <div class="cards-grid grid md:grid-cols-3 gap-4">
+          <div
+            v-for="account in demoAccounts"
+            :key="account.role"
+            :class="[
+              'reveal-card scroll-card interactive-card rounded-xl p-4 border bg-zinc-800/60',
+              account.color === 'yellow' ? 'border-yellow-500/30' : account.color === 'teal' ? 'border-teal-500/30' : 'border-blue-500/30',
+            ]"
+          >
+            <p
+              :class="[
+                'font-semibold mb-2',
+                account.color === 'yellow' ? 'text-yellow-400' : account.color === 'teal' ? 'text-teal-400' : 'text-blue-400',
+              ]"
+            >
+              {{ account.role }}
+            </p>
+            <p class="text-zinc-300 text-sm">Email: <span class="text-white">{{ account.email }}</span></p>
+            <p class="text-zinc-300 text-sm">Password: <span class="text-white">{{ account.password }}</span></p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer :class="[
-      'fixed bottom-0 left-0 right-0 z-20 py-4 transition-all duration-300',
-      navScrolled
-        ? 'bg-zinc-950 border-t border-white/5'
-        : 'bg-transparent border-t border-transparent'
-    ]">
+    <section class="scroll-section reveal-cta relative z-10 py-20">
+      <div class="section-bg section-bg-cyan-soft" />
+      <div class="max-w-4xl mx-auto px-4 text-center">
+        <p class="section-kicker uppercase tracking-[0.2em] text-xs text-cyan-300">Decision final</p>
+        <h3 class="section-title font-display text-3xl sm:text-4xl text-white">Tu siguiente compra puede ser mas simple</h3>
+        <p class="section-subtitle mt-3 text-zinc-400">Cotiza en menos de un minuto y decide con datos claros.</p>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <MotionButton to="/calculadora" label="Ir a la calculadora" variant="primary" size="lg" />
+          <MotionButton to="/register" label="Crear cuenta" variant="secondary" size="lg" />
+        </div>
+      </div>
+    </section>
+
+    <footer class="relative z-20 py-8 border-t border-[#d5dfe2] bg-[#eef4f4]/95">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-center">
-        <p class="text-zinc-600 text-xs">
-          © 2024 amz express · todos los derechos reservados
-        </p>
-        <p class="text-zinc-600 text-xs">
-          sitio web realizado por <span class="text-teal-400 font-medium">XpressDevelopment</span>
-        </p>
+        <p class="text-[#667780] text-xs">{{ currentYear }} AMZ Express. Todos los derechos reservados.</p>
+        <p class="text-[#667780] text-xs">Sitio desarrollado por <span class="text-[#35627A] font-medium">XpressDevelopment</span></p>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-/* Gradient text */
+.home-root {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(229, 174, 169, 0.24), transparent 38%),
+    radial-gradient(circle at 90% 18%, rgba(166, 169, 208, 0.22), transparent 42%),
+    #f1f5f5;
+}
+
+.hero-overlay {
+  background: linear-gradient(120deg, rgba(13, 33, 46, 0.82), rgba(25, 53, 69, 0.62));
+}
+
+.story-indicator {
+  position: fixed;
+  right: 1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px solid rgba(53, 98, 122, 0.22);
+  border-radius: 0.9rem;
+  background: rgba(245, 247, 247, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.story-indicator__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #5f7078;
+  transition: color 220ms ease;
+}
+
+.story-indicator__dot {
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 9999px;
+  background: rgba(53, 98, 122, 0.64);
+  transition: transform 220ms ease, background-color 220ms ease, box-shadow 220ms ease;
+}
+
+.story-indicator__label {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.08em;
+  font-size: 0.92rem;
+}
+
+.story-indicator__item.is-active {
+  color: #b46258;
+}
+
+.story-indicator__item.is-active .story-indicator__dot {
+  transform: scale(1.22);
+  background: #35627a;
+  box-shadow: 0 0 0 4px rgba(166, 169, 208, 0.28);
+}
+
+.hero-reveal,
+.hero-panel,
+.section-title,
+.section-subtitle,
+.scroll-card,
+.section-bg {
+  will-change: transform, opacity;
+}
+
 .gradient-text {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
+  background: linear-gradient(135deg, #e5aea9 0%, #a6a9d0 50%, #8e9a98 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Motion-style animations */
-[data-animate] {
-  will-change: transform, opacity;
+.ambient-layer {
+  opacity: 0.55;
 }
 
-/* Spring-like easing for smoother animations */
-.spring-ease {
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Pulse ring animation */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-/* Particles */
-.particles-container {
-  position: fixed;
-  inset: 0;
+.scroll-section {
+  position: relative;
   overflow: hidden;
+}
+
+.scroll-section > :not(.section-bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.section-kicker {
+  font-family: 'Manrope', sans-serif;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+}
+
+.section-bg {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
   z-index: 0;
 }
 
+.section-bg-teal {
+  background: radial-gradient(circle at 15% 35%, rgba(53, 98, 122, 0.1), transparent 56%);
+}
+
+.section-bg-cyan {
+  background: radial-gradient(circle at 85% 40%, rgba(166, 169, 208, 0.16), transparent 58%);
+}
+
+.section-bg-amber {
+  background: radial-gradient(circle at 50% 35%, rgba(142, 154, 152, 0.14), transparent 60%);
+}
+
+.section-bg-crimson {
+  background: radial-gradient(circle at 50% 35%, rgba(180, 98, 88, 0.12), transparent 62%);
+}
+
+.section-bg-teal-soft {
+  background: radial-gradient(circle at 18% 20%, rgba(229, 174, 169, 0.14), transparent 58%);
+}
+
+.section-bg-cyan-soft {
+  background: radial-gradient(circle at 80% 50%, rgba(166, 169, 208, 0.13), transparent 58%);
+}
+
+.orb {
+  position: absolute;
+  width: 30rem;
+  height: 30rem;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.16;
+}
+
+.orb-a {
+  left: -12rem;
+  top: -9rem;
+  background: radial-gradient(circle, rgba(53, 98, 122, 0.9), rgba(53, 98, 122, 0));
+}
+
+.orb-b {
+  right: -14rem;
+  top: 26%;
+  background: radial-gradient(circle, rgba(180, 98, 88, 0.66), rgba(180, 98, 88, 0));
+}
+
+.orb-c {
+  left: 36%;
+  bottom: -12rem;
+  background: radial-gradient(circle, rgba(166, 169, 208, 0.62), rgba(166, 169, 208, 0));
+}
+
+.particles {
+  z-index: 2;
+}
+
 .particle {
   position: absolute;
-  width: 5px;
-  height: 5px;
-  background: linear-gradient(135deg, #14b8a6, #0d9488);
-  border-radius: 50%;
-  opacity: 0.6;
-  animation: particle-rise linear infinite;
+  bottom: -20px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(229, 174, 169, 0.9), rgba(166, 169, 208, 0.78));
+  opacity: 0;
+  animation: particleRise linear infinite;
 }
 
-/* Badge pulse animation */
-@keyframes badge-pulse {
-  0%, 100% {
-    background-color: rgba(20, 184, 166, 0.1);
-    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+@keyframes particleRise {
+  0% {
+    transform: translateY(0) scale(0.9);
+    opacity: 0;
   }
-  50% {
-    background-color: rgba(20, 184, 166, 0.25);
-    box-shadow: 0 0 20px 2px rgba(20, 184, 166, 0.15);
+  20% {
+    opacity: 0.5;
   }
-}
-
-.badge-pulse {
-  animation: badge-pulse 2s ease-in-out infinite;
-}
-
-/* Scroll indicator bounce */
-.hero-scroll-indicator {
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateX(-50%) translateY(0);
-  }
-  40% {
-    transform: translateX(-50%) translateY(-10px);
-  }
-  60% {
-    transform: translateX(-50%) translateY(-5px);
+  100% {
+    transform: translateY(-110vh) scale(1.15);
+    opacity: 0;
   }
 }
 
-/* Carousel */
-.carousel-wrapper {
-  overflow: hidden;
+.service-pill {
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 9999px;
+  padding: 0.36rem 0.72rem;
+  color: #f5f5f5;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 1.4rem;
+  background: radial-gradient(circle at 40% 30%, rgba(229, 174, 169, 0.24), transparent 70%);
+  filter: blur(22px);
+  opacity: 0.8;
+}
+
+.hero-panel-card {
+  background:
+    linear-gradient(145deg, rgba(12, 32, 45, 0.9), rgba(20, 45, 60, 0.84)),
+    rgba(15, 35, 49, 0.9) !important;
+  border-color: rgba(245, 245, 245, 0.32) !important;
+  box-shadow:
+    0 14px 34px rgba(8, 20, 31, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.hero-panel-card > p {
+  color: #d6e7f2 !important;
+}
+
+.panel-card .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #d9e2e9;
+}
+
+.panel-card .row strong {
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.panel-card .row.total {
+  margin-top: 0.7rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.panel-card .row.total strong {
+  color: #ffd0cb;
+}
+
+.scroll-section .section-title {
+  color: #17384c;
+}
+
+.scroll-section .section-subtitle {
+  color: #60717a;
+}
+
+.scroll-section .section-kicker {
+  color: #b46258;
+}
+
+.hero .hero-metric-card {
+  background: rgba(10, 30, 44, 0.84) !important;
+  border-color: rgba(245, 245, 245, 0.32) !important;
+  box-shadow: 0 10px 22px rgba(8, 20, 31, 0.3);
+}
+
+.hero .hero-metric-card .text-teal-300 {
+  color: #e5f1f7 !important;
+}
+
+.hero .hero-metric-card .text-zinc-400 {
+  color: #d2dde4 !important;
+}
+
+.scroll-section .scroll-card {
+  background:
+    linear-gradient(155deg, rgba(14, 35, 49, 0.9), rgba(25, 51, 67, 0.86)),
+    rgba(13, 33, 47, 0.9) !important;
+  border-color: rgba(208, 226, 236, 0.24) !important;
+  box-shadow: 0 14px 30px rgba(9, 23, 34, 0.28);
+}
+
+.scroll-section .scroll-card .text-white {
+  color: #eef5f9 !important;
+}
+
+.scroll-section .scroll-card .text-zinc-400,
+.scroll-section .scroll-card .text-zinc-500,
+.scroll-section .scroll-card .text-zinc-300 {
+  color: #c8d8e1 !important;
+}
+
+.scroll-section .scroll-card .text-teal-300,
+.scroll-section .scroll-card .text-cyan-300,
+.scroll-section .scroll-card .text-amber-300,
+.scroll-section .scroll-card .text-rose-300 {
+  color: #ffd0cb !important;
+}
+
+.hero .scroll-card {
+  background: rgba(17, 41, 56, 0.66) !important;
+  border-color: rgba(245, 245, 245, 0.2) !important;
+  box-shadow: none;
+}
+
+.pain-card,
+.feature-card,
+.step-card,
+.testimonial-card,
+.faq-card {
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
   position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
 }
 
-.carousel-wrapper::before,
-.carousel-wrapper::after {
+.interactive-card::after {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 100px;
-  z-index: 10;
+  inset: -1px;
+  background: linear-gradient(120deg, transparent 20%, rgba(229, 174, 169, 0.24), transparent 80%);
+  transform: translateX(-120%);
+  transition: transform 420ms ease;
   pointer-events: none;
 }
 
-.carousel-wrapper::before {
-  left: 0;
-  background: linear-gradient(to right, #09090b, transparent);
+.pain-card:hover,
+.feature-card:hover,
+.step-card:hover,
+.testimonial-card:hover,
+.faq-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(53, 98, 122, 0.38);
+  box-shadow: 0 16px 30px rgba(26, 74, 97, 0.14);
 }
 
-.carousel-wrapper::after {
-  right: 0;
-  background: linear-gradient(to left, #09090b, transparent);
+.interactive-card:hover::after {
+  transform: translateX(120%);
 }
 
-.carousel-track {
-  display: flex;
-  gap: 0;
-  animation: carousel-scroll 60s linear infinite;
-  width: max-content;
+.icon-wrap {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.8rem;
+  display: grid;
+  place-items: center;
+  color: #b46258;
+  background: rgba(229, 174, 169, 0.2);
+  border: 1px solid rgba(180, 98, 88, 0.3);
 }
 
-.carousel-track:hover {
-  animation-play-state: paused;
+.step-number {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  color: #b46258;
+  font-weight: 700;
+  border: 1px solid rgba(180, 98, 88, 0.34);
+  background: rgba(229, 174, 169, 0.16);
 }
 
-.carousel-card {
-  width: 380px;
-  flex-shrink: 0;
+.faq-card summary {
+  list-style: none;
 }
 
-@media (min-width: 640px) {
-  .carousel-card {
-    width: 400px;
+.faq-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-card[open] {
+  border-color: rgba(53, 98, 122, 0.4);
+}
+
+@media (max-width: 768px) {
+  .orb {
+    width: 22rem;
+    height: 22rem;
+    filter: blur(65px);
   }
 }
 
-@media (min-width: 1024px) {
-  .carousel-card {
-    width: 420px;
+@media (prefers-reduced-motion: reduce) {
+  .interactive-card,
+  .interactive-card::after,
+  .story-indicator__item,
+  .story-indicator__dot {
+    transition: none;
   }
-}
 
-@keyframes carousel-scroll {
-  0% {
-    transform: translateX(0);
+  .interactive-card:hover {
+    transform: none;
+    box-shadow: none;
   }
-  100% {
-    transform: translateX(-50%);
+
+  .interactive-card::after {
+    display: none;
   }
 }
 </style>
-
 

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import type { ShippingOption, ProductInfo, PricingCalculation } from '@/types'
 import { useRouter } from 'vue-router'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 import { amazonService } from '@/services/amazon'
 import { pricingService } from '@/services/pricing'
 import { cartService } from '@/services/cart'
@@ -65,6 +66,9 @@ const categoryCPackages = computed(() => packageBreakdown.value.filter(pkg => pk
 const validPackagesTotal = computed(() => validPackages.value.reduce((acc, pkg) => acc + (pkg.pricing?.totalPrice || 0), 0))
 const hasValidPackages = computed(() => validPackages.value.length > 0)
 const hasCategoryC = computed(() => categoryCPackages.value.length > 0)
+const checkoutCtaLabel = computed(() =>
+  authStore.isAuthenticated ? 'Comprar' : 'Iniciar sesion para comprar'
+)
 const showHelperColumn = computed(() => showConfirmation.value)
 const showSuggestedColumn = computed(() => packageBreakdown.value.length > 0)
 const hasThirdColumn = computed(() => showHelperColumn.value || showSuggestedColumn.value)
@@ -347,6 +351,14 @@ async function createOrder() {
   }
 }
 
+function handleCheckoutAction() {
+  if (!authStore.isAuthenticated) {
+    router.push({ path: '/login', query: { redirect: '/checkout' } })
+    return
+  }
+  router.push('/checkout')
+}
+
 function formatCurrency(value: number | undefined | null): string {
   if (!value) return '$0.00'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
@@ -425,29 +437,66 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-64px)] pt-[64px] pb-16 relative overflow-hidden">
-    <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-teal-500/5 blur-3xl" />
+  <div class="calculator-page min-h-[calc(100dvh-64px)] pt-[64px] pb-16 relative overflow-hidden">
+    <div class="calculator-backdrop absolute inset-0 pointer-events-none" />
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-[#35627A]/20 blur-3xl" />
     <div class="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100dvh-128px)] flex items-center">
       <div class="w-full calculator-shell">
         <FadeIn direction="up">
-          <div class="mb-6 rounded-2xl border border-teal-500/25 bg-zinc-900/70 px-5 py-4">
-            <p class="text-sm sm:text-base text-zinc-300 leading-relaxed">
-              Ingresa la URL de Amazon o completa los datos manualmente (precio y peso) para calcular el valor estimado de tu paquete.
-              Este análisis te ayuda a validar si puede entrar en la categoría 4x4 o si aplica categoría C según las reglas de Aduana.
-              <a href="https://www.aduana.gob.ec/servicio-al-ciudadano/envios-courier-postal/" target="_blank" rel="noopener noreferrer" class="text-teal-400 hover:text-teal-300 underline underline-offset-4 ml-1">Más información oficial</a>
-            </p>
+          <section class="calc-hero mb-7">
+            <div>
+              <p class="calc-hero-tag">Calculadora AMZ Express</p>
+              <h1 class="calc-hero-title">
+                Cotización de
+                <span>importación</span>
+              </h1>
+              <p class="calc-hero-subtitle">
+                Arquitectura logística de alto rendimiento. Obtené el desglose táctico exacto de tus importaciones
+                directas desde USA.
+              </p>
+              <div class="calc-note mt-4">
+                <p class="calc-note-title">Nota de conserjería</p>
+                <p>
+                  Los tiempos de entrega son referenciales. Verificamos peso final, categoría y ruta para asegurar una
+                  proyección precisa.
+                </p>
+              </div>
+            </div>
+            <div class="calc-hero-visual" aria-hidden="true">
+              <div class="calc-hero-visual__label">Sistemas activos</div>
+            </div>
+          </section>
+        </FadeIn>
+
+        <FadeIn direction="up" :delay="80">
+          <div class="calc-brief mb-6">
+            <div class="calc-brief__lead">
+              <p class="calc-brief__kicker">Protocolo 4x4</p>
+              <p class="text-sm sm:text-base leading-relaxed">
+                Ingresá la URL de Amazon o completá los datos manualmente (precio y peso) para calcular el valor estimado de tu paquete.
+                Este análisis valida categoría 4x4 o categoría C según reglas de Aduana.
+                <a href="https://www.aduana.gob.ec/servicio-al-ciudadano/envios-courier-postal/" target="_blank" rel="noopener noreferrer">Más información oficial</a>
+              </p>
+            </div>
+            <div class="calc-brief__chips">
+              <span class="calc-chip">Entrada dual</span>
+              <span class="calc-chip">Motor automático</span>
+              <span class="calc-chip">Checkout listo</span>
+            </div>
           </div>
         </FadeIn>
-        <div :class="['grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8 items-stretch', hasThirdColumn ? 'xl:grid-cols-3' : '']">
+        <div :class="['calc-grid grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8 items-start', hasThirdColumn ? 'xl:grid-cols-3' : '']">
           <FadeIn direction="up" :delay="100">
-            <div class="calculator-panel glass rounded-2xl p-6 sm:p-8 border border-white/10 bg-zinc-900/75 shadow-2xl shadow-black/20 h-full overflow-hidden flex flex-col">
+            <div class="calculator-panel calc-panel calc-panel--primary rounded-2xl p-6 sm:p-8 border border-white/18 bg-[#0f2b3c]/84 shadow-[0_16px_34px_rgba(6,18,27,0.36)] h-full overflow-hidden flex flex-col">
               <div v-if="!showConfirmation && !showResult" class="space-y-6 flex-1 flex flex-col justify-center w-full max-w-[560px] mx-auto">
-                <div class="flex items-center justify-between gap-4">
-                  <h2 class="panel-title text-white">Datos del producto</h2>
-                  <div class="inline-flex items-center p-1 rounded-xl bg-zinc-800/70 border border-zinc-700/50">
-                    <button @click="setInputMode('url')" :class="['px-3 py-1.5 text-sm rounded-lg transition-all', inputMode === 'url' ? 'bg-teal-500 text-zinc-950 font-semibold' : 'text-zinc-300 hover:text-white']">URL</button>
-                    <button @click="setInputMode('manual')" :class="['px-3 py-1.5 text-sm rounded-lg transition-all', inputMode === 'manual' ? 'bg-teal-500 text-zinc-950 font-semibold' : 'text-zinc-300 hover:text-white']">Manual</button>
+                <div class="calc-panel-head flex items-center justify-between gap-4">
+                  <div>
+                    <p class="calc-panel-eyebrow">Módulo 01</p>
+                    <h2 class="panel-title text-white">Laboratorio de producto</h2>
+                  </div>
+                  <div class="mode-switch">
+                    <button @click="setInputMode('url')" :class="['mode-btn', inputMode === 'url' ? 'is-active' : '']">URL</button>
+                    <button @click="setInputMode('manual')" :class="['mode-btn', inputMode === 'manual' ? 'is-active' : '']">Manual</button>
                   </div>
                 </div>
                 <div :class="['mode-height-wrapper', inputMode === 'manual' ? 'manual' : 'url']">
@@ -484,17 +533,33 @@ onMounted(() => {
                     <span class="text-zinc-500">Estado extracción</span>
                     <span class="text-zinc-500">{{ authStore.isAuthenticated ? 'Habilitado' : 'Bloqueado' }}</span>
                   </div>
-                  <button v-if="inputMode === 'url' && authStore.isAuthenticated" @click="scrapeAmazonUrl" :disabled="scraping || calculating" class="w-full py-3 flex items-center justify-center gap-2 btn-primary">
-                    <svg v-if="scraping || calculating" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                    <span v-if="scraping">Extrayendo información...</span>
-                    <span v-else-if="calculating">Calculando...</span>
-                    <span v-else>Extraer datos</span>
-                  </button>
-                  <button v-else-if="inputMode === 'url' && !authStore.isAuthenticated" type="button" disabled title="Inicia sesión para poder extraer datos" class="w-full py-3 flex items-center justify-center gap-2 btn-primary opacity-60 cursor-not-allowed">Extraer datos</button>
-                  <button v-else @click="addCurrentProductToCart" :disabled="scraping || calculating" class="w-full py-3 flex items-center justify-center gap-2 btn-primary">
-                    <span v-if="calculating">Calculando...</span>
-                    <span v-else>Agregar producto al carrito</span>
-                  </button>
+                  <MotionButton
+                    v-if="inputMode === 'url' && authStore.isAuthenticated"
+                    @click="scrapeAmazonUrl"
+                    :disabled="scraping || calculating"
+                    :label="scraping ? 'Extrayendo informacion...' : calculating ? 'Calculando...' : 'Extraer datos'"
+                    variant="primary"
+                    size="lg"
+                    block
+                  />
+                  <MotionButton
+                    v-else-if="inputMode === 'url' && !authStore.isAuthenticated"
+                    disabled
+                    title="Inicia sesion para poder extraer datos"
+                    label="Extraer datos"
+                    variant="secondary"
+                    size="lg"
+                    block
+                  />
+                  <MotionButton
+                    v-else
+                    @click="addCurrentProductToCart"
+                    :disabled="scraping || calculating"
+                    :label="calculating ? 'Calculando...' : 'Agregar producto al carrito'"
+                    variant="primary"
+                    size="lg"
+                    block
+                  />
                 </div>
                 <p v-if="inputMode === 'manual' && scrapeError" class="text-red-400 text-sm mt-2">{{ scrapeError }}</p>
               </div>
@@ -527,8 +592,20 @@ onMounted(() => {
                     <p class="text-xs text-zinc-500 mt-2">{{ weight ? `Peso: ${weight} lbs` : 'Si no conoces el peso, lo estimamos en 1 lb' }}</p>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button @click="cancelConfirmation" class="py-3 px-4 rounded-xl border border-zinc-600 text-zinc-300 hover:bg-zinc-700/50 transition-all font-medium">Volver</button>
-                    <button type="button" @click="addCurrentProductToCart" class="py-3 px-4 rounded-xl border border-zinc-600 text-white hover:bg-zinc-700/50 transition-all font-medium">Agregar al carrito</button>
+                    <MotionButton
+                      @click="cancelConfirmation"
+                      label="Volver"
+                      variant="secondary"
+                      size="md"
+                      block
+                    />
+                    <MotionButton
+                      @click="addCurrentProductToCart"
+                      label="Agregar al carrito"
+                      variant="primary"
+                      size="md"
+                      block
+                    />
                   </div>
                 </div>
               </div>
@@ -545,15 +622,25 @@ onMounted(() => {
                   <div class="flex justify-between items-center"><span class="text-lg font-bold text-white">Total</span><span class="text-3xl sm:text-4xl font-bold text-teal-400">{{ formatCurrency(pricing.totalPrice) }}</span></div>
                 </div>
                 <p v-if="pricing.categoryC" class="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-xl text-yellow-300 text-sm">Este pedido aplica categoría C porque excede los límites de 4kg o $400 FOB. El valor final puede variar.</p>
-                <button @click="cancelConfirmation" class="w-full text-center text-sm text-zinc-400 hover:text-teal-400 transition-colors py-2 mt-4">Calcular otro producto</button>
+                <MotionButton
+                  @click="cancelConfirmation"
+                  label="Calcular otro producto"
+                  variant="secondary"
+                  size="md"
+                  block
+                  class="mt-4"
+                />
               </div>
             </div>
           </FadeIn>
           <FadeIn direction="up" :delay="240" class="h-full">
-            <div class="calculator-panel glass rounded-2xl p-6 sm:p-8 border border-white/10 bg-zinc-900/75 shadow-2xl shadow-black/20 h-full lg:h-[calc(100dvh-230px)] flex flex-col overflow-hidden">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="panel-title text-white">Carrito de productos</h3>
-                <span v-if="!cartLoading" class="text-xs text-zinc-400">{{ cartItems.length }} item(s)</span>
+            <div class="calculator-panel calc-panel calc-panel--cart rounded-2xl p-6 sm:p-8 border border-white/18 bg-[#0f2b3c]/84 shadow-[0_16px_34px_rgba(6,18,27,0.36)] h-full lg:h-[calc(100dvh-230px)] flex flex-col overflow-hidden">
+              <div class="calc-panel-head flex items-center justify-between mb-4">
+                <div>
+                  <p class="calc-panel-eyebrow">Módulo 02</p>
+                  <h3 class="panel-title text-white">Carrito de productos</h3>
+                </div>
+                <span v-if="!cartLoading" class="calc-count-pill">{{ cartItems.length }} item(s)</span>
               </div>
               
               <!-- Loading state -->
@@ -569,13 +656,13 @@ onMounted(() => {
               
               <div class="flex-1 min-h-0 flex flex-col">
                 <!-- Empty cart (after loading) -->
-                <div v-if="!cartLoading && cartItems.length === 0" class="text-sm text-zinc-500 mb-4">
+                <div v-if="!cartLoading && cartItems.length === 0" class="calc-empty-note text-sm mb-4">
                   Aún no agregas productos. Agrega varios y luego calcula la agrupación automática de paquetes 4x4.
                 </div>
 
                 <!-- Cart items -->
                 <div v-else-if="!cartLoading" class="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1 mb-4">
-                  <div v-for="item in cartItems" :key="item.id" class="rounded-lg border border-zinc-700/40 bg-zinc-900/70 p-3">
+                  <div v-for="item in cartItems" :key="item.id" class="calc-cart-item rounded-lg p-3">
                     <div class="flex items-start justify-between gap-2">
                       <div>
                         <p class="text-sm text-white font-medium line-clamp-2 break-words">{{ item.productName }}</p>
@@ -591,16 +678,22 @@ onMounted(() => {
                   <span class="text-white">{{ formatCurrency(cartSubtotalPrice) }} · {{ cartSubtotalWeight.toFixed(2) }} lbs</span>
                 </div>
               </div>
-              <button type="button" @click="estimateCartPackages" :disabled="calculating || cartItems.length === 0" :class="['w-full py-3 flex items-center justify-center gap-2 btn-primary disabled:cursor-not-allowed', cartItems.length === 0 ? 'opacity-60' : '']">
-                <svg v-if="calculating" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                <span v-if="calculating">Calculando paquetes...</span>
-                <span v-else>Calcular paquetes automáticos (4x4)</span>
-              </button>
+              <MotionButton
+                type="button"
+                @click="estimateCartPackages"
+                :disabled="calculating || cartItems.length === 0"
+                :label="calculating ? 'Calculando paquetes...' : 'Calcular paquetes automaticos (4x4)'"
+                variant="primary"
+                size="lg"
+                block
+                class="calc-estimate-btn"
+              />
             </div>
           </FadeIn>
           <FadeIn v-if="showHelperColumn || showSuggestedColumn" direction="up" :delay="160" class="h-full">
-            <div class="calculator-panel glass rounded-2xl p-6 sm:p-8 border border-white/10 bg-zinc-900/75 shadow-2xl shadow-black/20 h-full lg:h-[calc(100dvh-230px)] flex flex-col overflow-hidden">
+            <div class="calculator-panel calc-panel calc-panel--suggested rounded-2xl p-6 sm:p-8 border border-white/18 bg-[#0f2b3c]/84 shadow-[0_16px_34px_rgba(6,18,27,0.36)] h-full lg:h-[calc(100dvh-230px)] flex flex-col overflow-hidden">
               <template v-if="showHelperColumn">
+                <p class="calc-panel-eyebrow">Módulo 03</p>
                 <h3 class="panel-title text-white mb-4">Completa los campos</h3>
                 <div class="rounded-xl border border-zinc-700/50 bg-zinc-800/50 p-4 text-sm text-zinc-300">
                   El tipo de entrega ahora se selecciona en el checkout.
@@ -608,13 +701,16 @@ onMounted(() => {
                 <div class="mt-auto text-sm text-zinc-400">Revisa los datos extraídos y agrega el producto al carrito.</div>
               </template>
               <template v-else>
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="panel-title text-white">Paquetes sugeridos</h3>
+                <div class="calc-panel-head flex items-center justify-between mb-4">
+                  <div>
+                    <p class="calc-panel-eyebrow">Módulo 03</p>
+                    <h3 class="panel-title text-white">Paquetes sugeridos</h3>
+                  </div>
                   <button type="button" @click="packageBreakdown = []" class="text-sm text-zinc-400 hover:text-white transition-colors">Limpiar</button>
                 </div>
                 <div class="flex-1 min-h-0 flex flex-col">
                   <div class="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1">
-                    <div v-for="pkg in packageBreakdown" :key="pkg.id" :class="['rounded-xl border p-4', pkg.pricing?.categoryC ? 'border-amber-500/50 bg-amber-500/5' : 'border-zinc-700/50 bg-zinc-800/50']">
+                    <div v-for="pkg in packageBreakdown" :key="pkg.id" :class="['calc-package-card rounded-xl border p-4', pkg.pricing?.categoryC ? 'is-category-c border-amber-500/50 bg-amber-500/5' : 'border-zinc-700/50 bg-zinc-800/50']">
                       <div v-if="pkg.error" class="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">{{ pkg.error }}</div>
                       <p class="text-white font-medium">Paquete {{ pkg.id }}</p>
                       <p class="text-xs text-zinc-400 mt-1">{{ pkg.items.length }} producto(s) · {{ formatCurrency(pkg.subtotalPrice) }} · {{ pkg.subtotalWeight.toFixed(2) }} lbs</p>
@@ -641,14 +737,15 @@ onMounted(() => {
                     </div>
                     
                     <!-- Botón Comprar (solo si hay paquetes válidos) -->
-                    <button 
-                      v-if="hasValidPackages" 
-                      @click="router.push('/checkout')" 
-                      class="w-full py-3 flex items-center justify-center gap-2 btn-primary mb-2"
-                    >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                      Comprar
-                    </button>
+                    <MotionButton
+                      v-if="hasValidPackages"
+                      @click="handleCheckoutAction"
+                      :label="checkoutCtaLabel"
+                      variant="primary"
+                      size="lg"
+                      block
+                      class="mb-2"
+                    />
                     
                     <!-- Categoría C: quedan en el carrito + WhatsApp -->
                     <div v-if="hasCategoryC" class="space-y-2">
@@ -731,36 +828,445 @@ onMounted(() => {
                 <span class="text-white font-semibold">{{ convertedWeightKg !== null ? `${convertedWeightKg} kg` : '--' }}</span>
               </p>
             </div>
-            <button
+            <MotionButton
               type="button"
               @click="useConvertedWeight"
               :disabled="convertedWeightLbs === null"
-              class="w-full py-2.5 rounded-xl bg-teal-600 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Usar este valor en el peso del producto
-            </button>
+              label="Usar este valor en el peso del producto"
+              variant="primary"
+              size="md"
+              block
+            />
           </div>
         </div>
-        <button @click="showWeightGuideModal = false" class="w-full mt-4 py-3 rounded-xl bg-teal-600 text-white font-medium">Entendido</button>
+        <MotionButton
+          @click="showWeightGuideModal = false"
+          label="Entendido"
+          variant="primary"
+          size="lg"
+          block
+          class="mt-4"
+        />
       </div>
     </div>
   </Teleport>
 </template>
 
 <style scoped>
-.calculator-shell { animation: calculator-enter 0.45s ease-out; }
-.calculator-panel { min-height: 520px; }
-.panel-title { font-size: 1rem; line-height: 1.4; font-weight: 600; }
+.calculator-page {
+  background:
+    radial-gradient(circle at 16% 10%, rgba(53, 98, 122, 0.18), transparent 36%),
+    radial-gradient(circle at 82% 14%, rgba(166, 169, 208, 0.16), transparent 34%),
+    linear-gradient(180deg, #0a1218 0%, #060b0f 100%);
+}
+
+.calculator-backdrop {
+  background-image: radial-gradient(rgba(229, 174, 169, 0.08) 0.6px, transparent 0.6px);
+  background-size: 3px 3px;
+  opacity: 0.2;
+}
+
+.calculator-shell {
+  animation: calculator-enter 0.45s ease-out;
+}
+
+.calc-hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(166, 169, 208, 0.28);
+  background:
+    linear-gradient(155deg, rgba(4, 11, 16, 0.94), rgba(7, 15, 22, 0.9)),
+    rgba(5, 12, 18, 0.9);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.46);
+}
+
+.calc-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.66rem;
+  border-radius: 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f2d2cf;
+  border: 1px solid rgba(229, 174, 169, 0.34);
+  background: rgba(229, 174, 169, 0.12);
+}
+
+.calc-hero-title {
+  margin-top: 0.9rem;
+  font-size: clamp(1.8rem, 3.3vw, 3rem);
+  line-height: 0.95;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #f7fcff;
+}
+
+.calc-hero-title span {
+  color: #e5aea9;
+  text-shadow: 0 0 18px rgba(229, 174, 169, 0.2);
+}
+
+.calc-hero-subtitle {
+  margin-top: 0.9rem;
+  max-width: 52ch;
+  color: #b7c7ce;
+  line-height: 1.6;
+}
+
+.calc-note {
+  border: 1px solid rgba(166, 169, 208, 0.25);
+  border-radius: 0.4rem;
+  background: rgba(8, 22, 32, 0.72);
+  padding: 0.75rem 0.9rem;
+}
+
+.calc-note-title {
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: #e5aea9;
+  font-weight: 700;
+}
+
+.calc-note p {
+  color: #c2d2da;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.calc-hero-visual {
+  border-radius: 0.55rem;
+  border: 1px solid rgba(166, 169, 208, 0.28);
+  min-height: 240px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.6)),
+    url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+  position: relative;
+  overflow: hidden;
+}
+
+.calc-hero-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(53, 98, 122, 0.18), transparent 45%, rgba(166, 169, 208, 0.2));
+  mix-blend-mode: screen;
+}
+
+.calc-hero-visual__label {
+  position: absolute;
+  left: 0.8rem;
+  bottom: 0.8rem;
+  z-index: 1;
+  padding: 0.28rem 0.54rem;
+  border-radius: 0.3rem;
+  border: 1px solid rgba(166, 169, 208, 0.45);
+  background: rgba(0, 0, 0, 0.5);
+  color: #f5f5f5;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.calc-brief {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.9rem;
+  align-items: center;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(166, 169, 208, 0.24);
+  background:
+    linear-gradient(100deg, rgba(7, 20, 30, 0.9), rgba(9, 24, 35, 0.7)),
+    rgba(8, 20, 30, 0.74);
+  padding: 0.9rem 1rem;
+}
+
+.calc-brief__lead p {
+  color: #c2d2da;
+}
+
+.calc-brief__kicker {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  padding: 0.24rem 0.64rem;
+  margin-bottom: 0.45rem;
+  color: #f2d2cf;
+  border: 1px solid rgba(229, 174, 169, 0.34);
+  background: rgba(229, 174, 169, 0.1);
+}
+
+.calc-brief__chips {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.calc-chip {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.52rem;
+  border-radius: 0.36rem;
+  color: #eaf2f6;
+  border: 1px solid rgba(166, 169, 208, 0.28);
+  background: rgba(10, 28, 40, 0.74);
+}
+
+.calc-brief a {
+  color: #e5aea9;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.calc-instructions {
+  border-radius: 0.7rem;
+  border: 1px solid rgba(166, 169, 208, 0.24);
+  background: rgba(8, 20, 30, 0.74);
+  padding: 0.9rem 1rem;
+}
+
+.calc-instructions p {
+  color: #c2d2da;
+}
+
+.calc-instructions a {
+  color: #e5aea9;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.calc-grid {
+  align-items: stretch;
+}
+
+.calc-panel-head {
+  position: relative;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(166, 169, 208, 0.24);
+}
+
+.calc-panel-eyebrow {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #a6a9d0;
+  margin-bottom: 0.12rem;
+}
+
+.calc-count-pill {
+  font-size: 0.72rem;
+  border-radius: 9999px;
+  padding: 0.24rem 0.58rem;
+  color: #d8e8ef;
+  border: 1px solid rgba(166, 169, 208, 0.3);
+  background: rgba(10, 27, 38, 0.6);
+}
+
+.calc-empty-note {
+  border: 1px dashed rgba(166, 169, 208, 0.3);
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  color: #9eb3bf;
+  background: rgba(8, 22, 32, 0.48);
+}
+
+.calc-cart-item {
+  border: 1px solid rgba(166, 169, 208, 0.24);
+  background:
+    linear-gradient(130deg, rgba(9, 23, 34, 0.84), rgba(7, 18, 28, 0.68));
+  box-shadow: inset 0 1px 0 rgba(245, 245, 245, 0.03);
+}
+
+.calc-package-card {
+  border-color: rgba(166, 169, 208, 0.24) !important;
+  background:
+    linear-gradient(150deg, rgba(9, 22, 33, 0.86), rgba(7, 18, 27, 0.7)) !important;
+}
+
+.calc-package-card.is-category-c {
+  border-color: rgba(229, 174, 169, 0.45) !important;
+  background:
+    linear-gradient(145deg, rgba(45, 22, 24, 0.68), rgba(18, 10, 11, 0.55)) !important;
+}
+
+.calculator-panel {
+  min-height: 520px;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  border-radius: 0.6rem;
+}
+
+.calc-panel {
+  background:
+    linear-gradient(165deg, rgba(13, 22, 31, 0.96), rgba(8, 14, 21, 0.9)),
+    rgba(6, 12, 18, 0.9) !important;
+  border-color: rgba(166, 169, 208, 0.26) !important;
+  box-shadow:
+    0 20px 38px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(229, 174, 169, 0.08);
+}
+
+.calculator-panel:hover {
+  transform: translateY(-3px);
+  border-color: rgba(229, 174, 169, 0.36) !important;
+  box-shadow:
+    0 22px 42px rgba(0, 0, 0, 0.56),
+    0 0 0 1px rgba(229, 174, 169, 0.09) inset;
+}
+
+.panel-title {
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 700;
+  color: #f1fbff !important;
+}
+
+.mode-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem;
+  border-radius: 0.42rem;
+  background: rgba(7, 17, 25, 0.72);
+  border: 1px solid rgba(166, 169, 208, 0.24);
+}
+
+.mode-btn {
+  border: none;
+  background: transparent;
+  color: #a8bbc5;
+  padding: 0.34rem 0.72rem;
+  border-radius: 0.32rem;
+  font-size: 0.84rem;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.mode-btn.is-active {
+  background: linear-gradient(135deg, rgba(53, 98, 122, 0.95), rgba(166, 169, 208, 0.92));
+  color: #f5f5f5;
+  font-weight: 700;
+}
+
 .mode-height-wrapper { overflow: hidden; transition: max-height 260ms ease; }
 .mode-height-wrapper.url { max-height: 140px; }
 .mode-height-wrapper.manual { max-height: 460px; }
 .mode-content-block { transform-origin: top; }
 .mode-expand-enter-active, .mode-expand-leave-active { transition: opacity 220ms ease, transform 220ms ease; }
 .mode-expand-enter-from, .mode-expand-leave-to { opacity: 0; transform: translateY(-6px) scaleY(0.98); }
-@media (max-width: 640px) { .panel-title { font-size: 1rem; } .mode-height-wrapper.url, .mode-height-wrapper.manual { max-height: none; } }
+
+.calculator-shell :is(input, select, textarea) {
+  background: rgba(6, 18, 28, 0.9) !important;
+  border-color: rgba(166, 169, 208, 0.24) !important;
+  color: #eef5f8 !important;
+}
+
+.calculator-shell :is(input, select, textarea)::placeholder {
+  color: #93aab5 !important;
+}
+
+.calculator-shell :is(input, select, textarea):focus {
+  border-color: #e5aea9 !important;
+  box-shadow: 0 0 0 3px rgba(229, 174, 169, 0.2) !important;
+}
+
+.calculator-shell .text-white { color: #eef5f8 !important; }
+.calculator-shell .text-zinc-300,
+.calculator-shell .text-zinc-400,
+.calculator-shell .text-zinc-500 { color: #a9bdc7 !important; }
+
+.calculator-shell .text-teal-300,
+.calculator-shell .text-teal-400,
+.calculator-shell .text-teal-500 { color: #e5aea9 !important; }
+
+.calculator-shell .bg-zinc-800\/50,
+.calculator-shell .bg-zinc-800\/70,
+.calculator-shell .bg-zinc-900\/60,
+.calculator-shell .bg-zinc-900\/70 {
+  background: rgba(3, 12, 18, 0.68) !important;
+}
+
+.calculator-shell .border-zinc-700\/30,
+.calculator-shell .border-zinc-700\/40,
+.calculator-shell .border-zinc-700\/50 {
+  border-color: rgba(166, 169, 208, 0.2) !important;
+}
+
+.calculator-shell .text-amber-400,
+.calculator-shell .text-yellow-300,
+.calculator-shell .text-red-300 {
+  color: #ff9b95 !important;
+}
+
+.calculator-shell .bg-green-600 {
+  background: linear-gradient(135deg, #35627A, #A6A9D0) !important;
+}
+
+.calculator-shell .bg-green-600:hover {
+  filter: brightness(1.1);
+}
+
+.calculator-shell :deep(.calc-estimate-btn.motion-btn:disabled .motion-btn__row--bottom) {
+  display: none;
+}
+
+.calculator-shell :deep(.calc-estimate-btn.motion-btn:disabled .motion-btn__row--top) {
+  color: #ffffff !important;
+}
+
+@media (max-width: 1200px) {
+  .calc-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .calc-hero-visual {
+    min-height: 200px;
+  }
+
+  .calc-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .calc-brief__chips {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel-title { font-size: 1rem; }
+  .mode-height-wrapper.url, .mode-height-wrapper.manual { max-height: none; }
+
+  .calc-hero {
+    padding: 0.85rem;
+    border-radius: 0.85rem;
+  }
+
+  .calc-hero-title {
+    font-size: 2rem;
+  }
+}
+
 @media (max-width: 1280px) { .calculator-panel { min-height: 460px; } }
 @media (max-width: 1024px) { .calculator-panel { min-height: auto; } }
-@keyframes calculator-enter { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .calculator-panel { transition: none; }
+  .calculator-panel:hover { transform: none; box-shadow: none; }
+}
+
+@keyframes calculator-enter {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 
 

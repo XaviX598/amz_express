@@ -8,6 +8,7 @@ import { cartService } from '@/services/cart'
 import { pricingService } from '@/services/pricing'
 import { orderService } from '@/services/order'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 import type { PaymentMethod, ShippingOption } from '@/types'
 
 interface NewAddress {
@@ -109,6 +110,7 @@ const newAddress = ref<NewAddress>({
   phone: ''
 })
 const savingAddress = ref(false)
+const deletingAddressId = ref<number | null>(null)
 const paypalLoaded = ref(false)
 const paypalProcessing = ref(false)
 const paypalLoading = ref(false)
@@ -352,6 +354,26 @@ async function saveAddress() {
     error.value = err.message || 'Error al guardar dirección'
   } finally {
     savingAddress.value = false
+  }
+}
+
+async function deleteAddress(addressId: number) {
+  deletingAddressId.value = addressId
+  error.value = null
+
+  try {
+    await addressService.delete(addressId)
+    addresses.value = addresses.value.filter(addr => addr.id !== addressId)
+
+    if (selectedAddressId.value === addressId) {
+      selectedAddressId.value = addresses.value.length > 0 ? (addresses.value[0].id ?? null) : null
+    }
+
+    uiStore.success('Dirección eliminada')
+  } catch (err: any) {
+    error.value = err.message || 'No se pudo eliminar la dirección'
+  } finally {
+    deletingAddressId.value = null
   }
 }
 
@@ -613,9 +635,12 @@ onMounted(() => {
           <!-- Empty cart -->
           <div v-if="cartItems.length === 0" class="text-center py-16">
             <p class="text-zinc-400 mb-4">Tu carrito está vacío</p>
-            <button @click="router.push('/calculadora')" class="btn-primary">
-              Ir a la calculadora
-            </button>
+            <MotionButton
+              @click="router.push('/calculadora')"
+              label="Ir a la calculadora"
+              variant="primary"
+              size="lg"
+            />
           </div>
           
           <template v-else>
@@ -752,7 +777,17 @@ onMounted(() => {
                     <div v-if="selectedAddressId === addr.id" class="w-2.5 h-2.5 rounded-full bg-teal-500 mt-1.5 mr-3 flex-shrink-0" />
                     <div v-else class="w-2.5 h-2.5 rounded-full border border-zinc-500 mt-1.5 mr-3 flex-shrink-0" />
                     <div class="flex-1">
-                      <p class="text-white font-medium">{{ addr.street }}</p>
+                      <div class="flex items-start justify-between gap-3">
+                        <p class="text-white font-medium">{{ addr.street }}</p>
+                        <button
+                          type="button"
+                          @click.stop.prevent="addr.id && deleteAddress(addr.id)"
+                          :disabled="deletingAddressId === addr.id"
+                          class="inline-flex items-center rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {{ deletingAddressId === addr.id ? 'Eliminando...' : 'Eliminar' }}
+                        </button>
+                      </div>
                       <p class="text-zinc-400 text-sm">{{ addr.city }}, {{ addr.state }} {{ addr.postalCode }}</p>
                       <p class="text-zinc-500 text-sm">{{ addr.phone }}</p>
                     </div>
@@ -889,19 +924,14 @@ onMounted(() => {
             </div>
             
             <!-- Confirm button -->
-            <button 
-              @click="confirmOrder" 
+            <MotionButton
+              @click="confirmOrder"
               :disabled="processingOrder || (requiresShippingAddress && !selectedAddressId) || validPackages.length === 0"
-              class="w-full py-4 flex items-center justify-center gap-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg v-if="processingOrder" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              <span v-if="processingOrder">Procesando...</span>
-              <span v-else-if="selectedPaymentMethod === 'TRANSFERENCIA'">Pagar y enviar comprobante</span>
-              <span v-else>Confirmar compra</span>
-            </button>
+              :label="processingOrder ? 'Procesando...' : selectedPaymentMethod === 'TRANSFERENCIA' ? 'Pagar y enviar comprobante' : 'Confirmar compra'"
+              variant="primary"
+              size="lg"
+              block
+            />
           </template>
         </div>
       </FadeIn>

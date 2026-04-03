@@ -4,6 +4,7 @@ import api from '@/services/api'
 import { useOrderStore } from '@/stores/order'
 import type { Order, OrderStatus, ShippingOption } from '@/types'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 
 // User type from backend
 interface AdminUser {
@@ -284,7 +285,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen pt-[64px] pb-16">
+  <div class="admin-orders-page min-h-screen pt-[64px] pb-16">
     <!-- Background -->
     <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-teal-500/5 blur-3xl" />
@@ -387,7 +388,7 @@ onMounted(() => {
       <div v-if="showHistoryModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closeHistoryModal" />
         <FadeIn direction="scale" :duration="300">
-          <div class="relative glass rounded-2xl border border-white/10 w-full h-full max-w-6xl mx-4 my-4 flex flex-col">
+          <div class="relative glass admin-orders-modal rounded-2xl border border-white/10 w-full h-full max-w-6xl mx-4 my-4 flex flex-col">
             <!-- Modal header -->
             <div class="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
               <div>
@@ -593,7 +594,7 @@ onMounted(() => {
       <div v-if="showStatusModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showStatusModal = false" />
         <FadeIn direction="scale" :duration="300">
-          <div class="relative glass rounded-2xl p-6 sm:p-8 max-w-md w-full border border-white/10">
+          <div class="relative glass admin-orders-modal rounded-2xl p-6 sm:p-8 max-w-md w-full border border-white/10">
             <h3 class="text-xl font-bold mb-2 text-white">Actualizar Estado</h3>
             <p class="text-zinc-400 mb-6">Pedido #{{ selectedOrder?.id }}</p>
             
@@ -631,13 +632,15 @@ onMounted(() => {
               >
                 Cancelar
               </button>
-              <button
+              <MotionButton
                 @click="updateStatus"
                 :disabled="orderStore.loading"
-                class="flex-1 btn-primary disabled:opacity-50"
-              >
-                Guardar
-              </button>
+                label="Guardar"
+                variant="primary"
+                size="md"
+                block
+                class="flex-1"
+              />
             </div>
           </div>
         </FadeIn>
@@ -649,7 +652,7 @@ onMounted(() => {
       <div v-if="showObservationModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showObservationModal = false" />
         <FadeIn direction="scale" :duration="300">
-          <div class="relative glass rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-white/10">
+          <div class="relative glass admin-orders-modal rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-white/10">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-xl font-bold text-white">Observaciones del Pedido</h3>
               <button
@@ -683,14 +686,15 @@ onMounted(() => {
               >
                 Cancelar
               </button>
-              <button
+              <MotionButton
                 @click="saveObservation"
                 :disabled="savingObservation"
-                class="flex-1 btn-primary disabled:opacity-50"
-              >
-                <span v-if="savingObservation">Guardando...</span>
-                <span v-else>Guardar</span>
-              </button>
+                :label="savingObservation ? 'Guardando...' : 'Guardar'"
+                variant="primary"
+                size="md"
+                block
+                class="flex-1"
+              />
             </div>
           </div>
         </FadeIn>
@@ -698,4 +702,120 @@ onMounted(() => {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.admin-orders-page {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(53, 98, 122, 0.2), transparent 36%),
+    radial-gradient(circle at 84% 14%, rgba(166, 169, 208, 0.16), transparent 34%),
+    linear-gradient(180deg, #091019 0%, #050b12 100%);
+}
+
+.admin-orders-page .glass {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 31, 0.94), rgba(8, 18, 28, 0.84)),
+    rgba(8, 19, 29, 0.78);
+  border: 1px solid rgba(166, 169, 208, 0.26) !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+}
+
+.admin-orders-modal.glass {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 31, 0.96), rgba(8, 18, 28, 0.9)),
+    rgba(8, 19, 29, 0.82) !important;
+  border: 1px solid rgba(166, 169, 208, 0.28) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.admin-orders-page .text-zinc-500 {
+  color: #aabdc7 !important;
+}
+
+.admin-orders-page .text-zinc-400 {
+  color: #b7c9d1 !important;
+}
+
+.admin-orders-page .text-zinc-300 {
+  color: #d6e2e8 !important;
+}
+
+.admin-orders-page .text-zinc-600 {
+  color: #9fb4bf !important;
+}
+
+.admin-orders-modal .text-zinc-500 {
+  color: #aabdc7 !important;
+}
+
+.admin-orders-modal .text-zinc-400 {
+  color: #b7c9d1 !important;
+}
+
+.admin-orders-modal .text-zinc-300 {
+  color: #d6e2e8 !important;
+}
+
+.admin-orders-modal .text-zinc-600 {
+  color: #9fb4bf !important;
+}
+
+.admin-orders-page .text-teal-400 {
+  color: #e5aea9 !important;
+}
+
+.admin-orders-page .text-teal-300 {
+  color: #f2cbc7 !important;
+}
+
+.admin-orders-modal .text-teal-400 {
+  color: #e5aea9 !important;
+}
+
+.admin-orders-modal .text-teal-300 {
+  color: #f2cbc7 !important;
+}
+
+.admin-orders-page .border-white\/5 {
+  border-color: rgba(166, 169, 208, 0.24) !important;
+}
+
+.admin-orders-modal .border-white\/10,
+.admin-orders-modal .border-white\/5 {
+  border-color: rgba(166, 169, 208, 0.24) !important;
+}
+
+.admin-orders-page :is(input, textarea) {
+  color: #eef5f8 !important;
+}
+
+.admin-orders-modal :is(input, textarea) {
+  color: #eef5f8 !important;
+}
+
+.admin-orders-page :is(input, textarea)::placeholder {
+  color: #8fa5b0 !important;
+}
+
+.admin-orders-modal :is(input, textarea)::placeholder {
+  color: #8fa5b0 !important;
+}
+
+.admin-orders-page :is(input, textarea):focus {
+  border-color: #e5aea9 !important;
+  box-shadow: 0 0 0 3px rgba(229, 174, 169, 0.2) !important;
+}
+
+.admin-orders-modal :is(input, textarea):focus {
+  border-color: #e5aea9 !important;
+  box-shadow: 0 0 0 3px rgba(229, 174, 169, 0.2) !important;
+}
+
+.admin-orders-page :is(thead .text-zinc-400, tbody .text-zinc-500) {
+  color: #b4c7d0 !important;
+}
+
+.admin-orders-modal :is(thead .text-zinc-400, tbody .text-zinc-500) {
+  color: #b4c7d0 !important;
+}
+</style>
 

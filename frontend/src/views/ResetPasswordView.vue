@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { authService } from '@/services/auth'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,7 +25,7 @@ async function validateToken() {
 
   if (!token.value) {
     tokenValid.value = false
-    validationMessage.value = 'El enlace no es válido.'
+    validationMessage.value = 'El enlace no es valido.'
     loadingValidation.value = false
     return
   }
@@ -46,11 +47,11 @@ async function submitResetPassword() {
   success.value = ''
 
   if (password.value.length < 6) {
-    error.value = 'La contraseña debe tener al menos 6 caracteres.'
+    error.value = 'La contrasena debe tener al menos 6 caracteres.'
     return
   }
   if (password.value !== confirmPassword.value) {
-    error.value = 'Las contraseñas no coinciden.'
+    error.value = 'Las contrasenas no coinciden.'
     return
   }
 
@@ -66,7 +67,7 @@ async function submitResetPassword() {
       router.push('/login')
     }, 1800)
   } catch (err: any) {
-    error.value = err?.message || 'No se pudo cambiar la contraseña.'
+    error.value = err?.message || 'No se pudo cambiar la contrasena.'
   } finally {
     changing.value = false
   }
@@ -84,7 +85,7 @@ onMounted(() => {
 
     <FadeIn direction="up" :duration="500">
       <div class="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/20 w-full max-w-lg">
-        <h1 class="text-3xl font-bold text-white text-center">Cambiar contraseña</h1>
+        <h1 class="text-3xl font-bold text-white text-center">Cambiar contrasena</h1>
 
         <div v-if="loadingValidation" class="mt-6 text-center text-zinc-400">
           Validando enlace...
@@ -92,7 +93,7 @@ onMounted(() => {
 
         <template v-else-if="!tokenValid">
           <div class="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-sm text-center">
-            {{ validationMessage || 'El enlace expiró o no es válido.' }}
+            {{ validationMessage || 'El enlace expiro o no es valido.' }}
           </div>
           <div class="mt-6 text-center">
             <RouterLink to="/forgot-password" class="text-teal-400 hover:text-teal-300 font-medium transition-colors">
@@ -102,7 +103,7 @@ onMounted(() => {
         </template>
 
         <template v-else>
-          <p class="text-zinc-400 mt-2 text-center">Ingresa tu nueva contraseña.</p>
+          <p class="text-zinc-400 mt-2 text-center">Ingresa tu nueva contrasena.</p>
 
           <div v-if="error" class="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
             {{ error }}
@@ -113,35 +114,34 @@ onMounted(() => {
 
           <form @submit.prevent="submitResetPassword" class="mt-6 space-y-5">
             <div>
-              <label class="block text-sm font-medium text-zinc-300 mb-2">Nueva contraseña</label>
+              <label class="block text-sm font-medium text-zinc-300 mb-2">Nueva contrasena</label>
               <input
                 v-model="password"
                 type="password"
                 autocomplete="new-password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Minimo 6 caracteres"
                 class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-zinc-300 mb-2">Repite la contraseña</label>
+              <label class="block text-sm font-medium text-zinc-300 mb-2">Repite la contrasena</label>
               <input
                 v-model="confirmPassword"
                 type="password"
                 autocomplete="new-password"
-                placeholder="Repite la contraseña"
+                placeholder="Repite la contrasena"
                 class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
               />
             </div>
 
-            <button
-              type="submit"
+            <MotionButton
+              :label="changing ? 'Guardando...' : 'Actualizar contrasena'"
               :disabled="changing"
-              class="w-full btn-primary py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <span v-if="changing">Guardando...</span>
-              <span v-else>Actualizar contraseña</span>
-            </button>
+              variant="primary"
+              size="lg"
+              block
+            />
           </form>
         </template>
       </div>

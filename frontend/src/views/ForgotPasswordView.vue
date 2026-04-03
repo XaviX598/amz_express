@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { authService } from '@/services/auth'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 
 const email = ref('')
 const sending = ref(false)
@@ -95,15 +96,13 @@ onUnmounted(() => {
             />
           </div>
 
-          <button
-            type="submit"
+          <MotionButton
+            :label="sending ? 'Enviando...' : isCooldownActive ? `Reenviar en ${resendCooldown}s` : 'Enviar enlace'"
             :disabled="isSubmitDisabled"
-            class="w-full btn-primary py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <span v-if="sending">Enviando...</span>
-            <span v-else-if="isCooldownActive">Reenviar en {{ resendCooldown }}s</span>
-            <span v-else>Enviar enlace</span>
-          </button>
+            variant="primary"
+            size="lg"
+            block
+          />
         </form>
 
         <div class="mt-6 text-center">

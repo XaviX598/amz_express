@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -45,101 +46,212 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-64px)] pt-[64px] px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
-    <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
-    <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[900px] h-[420px] bg-teal-500/10 blur-3xl pointer-events-none" />
+  <div class="auth-page min-h-[calc(100dvh-64px)] pt-[72px] px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
+    <div class="auth-noise pointer-events-none absolute inset-0" />
 
-    <FadeIn direction="up" :duration="600">
-      <div class="relative max-w-5xl mx-auto w-full">
-        <div class="grid lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-          <div class="hidden lg:flex flex-col justify-between rounded-3xl border border-white/10 bg-zinc-900/70 p-8">
+    <FadeIn direction="up" :duration="560">
+      <div class="relative auth-shell max-w-5xl mx-auto w-full">
+        <div class="grid lg:grid-cols-[0.92fr,1.08fr] gap-0 rounded-3xl overflow-hidden border border-[#cad8dd] shadow-[0_30px_70px_rgba(26,74,97,0.16)]">
+          <aside class="hidden lg:flex flex-col justify-between auth-side p-9">
             <div>
-              <p class="text-sm text-teal-400 font-semibold uppercase tracking-wide">Acceso seguro</p>
-              <h2 class="text-4xl font-bold text-white mt-3 leading-tight">Gestiona tus pedidos sin complicaciones</h2>
-              <p class="text-zinc-400 mt-4">Inicia sesión para revisar órdenes, tracking y estimaciones en un solo panel.</p>
+              <p class="auth-kicker">Acceso seguro</p>
+              <h2 class="auth-title">Bienvenido de nuevo</h2>
+              <p class="auth-copy">
+                Gestioná tus pedidos, cotizaciones y seguimiento desde una sola consola con trazabilidad completa.
+              </p>
             </div>
 
-            <div class="rounded-2xl border border-zinc-700/50 bg-zinc-950/70 p-4 mt-8">
-              <p class="text-zinc-300 text-sm mb-3">
-                Si necesitas contratar este tipo de sistemas para tu empresa, contáctanos.
+            <div class="auth-side-card">
+              <p class="text-sm text-white mb-3">
+                ¿Buscás una solución similar para tu empresa?
               </p>
-              <a
+              <MotionButton
                 href="https://wa.me/593985295277?text=Hola,%20quiero%20informacion%20sobre%20un%20sistema%20como%20este%20para%20mi%20empresa."
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center justify-center w-full rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 transition-colors"
-              >
-                Contactar por WhatsApp
-              </a>
+                label="Contactar por WhatsApp"
+                variant="primary"
+                size="md"
+                block
+              />
             </div>
-          </div>
+          </aside>
 
-          <div class="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/20">
+          <section class="auth-card p-6 sm:p-9">
             <div class="text-center mb-7">
-              <div class="size-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/30">
+              <div class="auth-icon size-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h1 class="text-3xl font-bold text-white">Bienvenido de vuelta</h1>
-              <p class="text-zinc-400 mt-2">Ingresa tus credenciales para continuar</p>
+              <h1 class="text-3xl font-bold text-[#14384d]">Iniciar sesión</h1>
+              <p class="text-[#62757f] mt-2">Ingresá tus credenciales para continuar</p>
             </div>
 
-            <div v-if="localError" class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
+            <div v-if="localError" class="mb-6 p-4 auth-error text-sm">
               {{ localError }}
             </div>
 
             <form @submit.prevent="handleSubmit" class="space-y-5">
               <div>
-                <label class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+                <label class="auth-label">Correo electrónico</label>
                 <input
                   v-model="email"
                   type="email"
                   autocomplete="email"
-                  placeholder="tu@email.com"
-                  class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  placeholder="nombre@empresa.com"
+                  class="auth-input"
                 />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-zinc-300 mb-2">Contraseña</label>
+                <label class="auth-label">Contraseña</label>
                 <input
                   v-model="password"
                   type="password"
                   autocomplete="current-password"
                   placeholder="••••••••"
-                  class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3.5 px-4 text-white placeholder-zinc-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  class="auth-input"
                 />
                 <div class="mt-2 text-right">
-                  <RouterLink to="/forgot-password" class="text-sm text-teal-400 hover:text-teal-300 transition-colors">
+                  <RouterLink to="/forgot-password" class="text-sm text-[#35627A] hover:text-[#1a4a61] transition-colors">
                     ¿Olvidaste tu contraseña?
                   </RouterLink>
                 </div>
               </div>
 
-              <button
+              <MotionButton
                 type="submit"
+                :label="authStore.loading ? 'Iniciando sesion...' : 'Iniciar sesion'"
                 :disabled="authStore.loading"
-                class="w-full btn-primary py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <span v-if="authStore.loading">Iniciando sesión...</span>
-                <span v-else>Iniciar sesión</span>
-              </button>
+                variant="primary"
+                size="lg"
+                block
+              />
             </form>
 
             <div class="mt-6 text-center">
-              <p class="text-zinc-400">
+              <p class="text-[#62757f]">
                 ¿No tienes cuenta?
-                <RouterLink to="/register" class="text-teal-400 hover:text-teal-300 font-medium transition-colors">
+                <RouterLink to="/register" class="text-[#1a4a61] hover:text-[#b46258] font-medium transition-colors">
                   Regístrate
                 </RouterLink>
               </p>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </FadeIn>
   </div>
 </template>
+
+<style scoped>
+.auth-page {
+  background:
+    radial-gradient(circle at 16% 14%, rgba(166, 169, 208, 0.22), transparent 38%),
+    radial-gradient(circle at 84% 16%, rgba(229, 174, 169, 0.2), transparent 42%),
+    linear-gradient(180deg, #f5f7f7 0%, #edf3f2 100%);
+}
+
+.auth-noise {
+  opacity: 0.25;
+  background-image: radial-gradient(rgba(53, 98, 122, 0.12) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+}
+
+.auth-shell {
+  backdrop-filter: blur(3px);
+}
+
+.auth-side {
+  background: linear-gradient(160deg, #1a4a61 0%, #35627a 62%, #1f4e67 100%);
+  color: #f5f5f5;
+}
+
+.auth-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.78rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d3e6f1;
+  border: 1px solid rgba(245, 245, 245, 0.26);
+  background: rgba(245, 245, 245, 0.08);
+}
+
+.auth-title {
+  margin-top: 1rem;
+  font-size: 2rem;
+  line-height: 1.04;
+  letter-spacing: 0.02em;
+  font-weight: 800;
+}
+
+.auth-copy {
+  margin-top: 0.95rem;
+  color: #d7e3e9;
+  line-height: 1.6;
+}
+
+.auth-side-card {
+  border: 1px solid rgba(245, 245, 245, 0.24);
+  border-radius: 1rem;
+  background: rgba(245, 245, 245, 0.12);
+  padding: 1rem;
+}
+
+.auth-card {
+  background: rgba(249, 251, 251, 0.92);
+}
+
+.auth-icon {
+  background: linear-gradient(135deg, #1a4a61, #35627a);
+  box-shadow: 0 12px 28px rgba(26, 74, 97, 0.24);
+}
+
+.auth-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #35627a;
+}
+
+.auth-input {
+  width: 100%;
+  border-radius: 0.78rem;
+  border: 1px solid #d2dde0;
+  background: #edf2f2;
+  color: #14384d;
+  padding: 0.88rem 0.9rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.auth-input::placeholder {
+  color: #8b9ba2;
+}
+
+.auth-input:focus {
+  border-color: #35627a;
+  box-shadow: 0 0 0 3px rgba(53, 98, 122, 0.14);
+  background: #f7faf9;
+  outline: none;
+}
+
+.auth-error {
+  border: 1px solid rgba(180, 98, 88, 0.35);
+  border-radius: 0.8rem;
+  background: rgba(180, 98, 88, 0.12);
+  color: #8b2f24;
+}
+
+@media (max-width: 1024px) {
+  .auth-card {
+    border-radius: 1.2rem;
+  }
+}
+</style>
 
 

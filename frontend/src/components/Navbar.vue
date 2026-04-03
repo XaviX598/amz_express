@@ -1,16 +1,29 @@
-﻿<script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+<script setup lang="ts">
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { gsap } from 'gsap'
 import { useAuthStore } from '@/stores/auth'
 import { navGradientHeight, navScrolled } from '@/composables/useNavScroll'
+import MotionButton from '@/components/MotionButton.vue'
 
 const authStore = useAuthStore()
+const route = useRoute()
 const router = useRouter()
+const mobileMenuOpen = ref(false)
+const mobilePanel = ref<HTMLElement | null>(null)
+let mobileTimeline: gsap.core.Timeline | null = null
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 const userName = computed(() => authStore.user?.name || '')
+const useDarkTopNavText = computed(() =>
+  ['/login', '/register', '/forgot-password', '/reset-password'].includes(route.path)
+)
+const forceWhiteNavText = computed(() => route.path.startsWith('/ordenes'))
+const shouldUseDarkNavText = computed(() =>
+  !forceWhiteNavText.value && (navScrolled.value || useDarkTopNavText.value)
+)
 
 const showOrdersLink = computed(() => {
   return isAuthenticated.value && !isAdmin.value
@@ -20,155 +33,250 @@ const isRegularUser = computed(() => {
   return isAuthenticated.value && !isAdmin.value && !isSuperAdmin.value
 })
 
+const mainLinks = computed(() => {
+  if (isSuperAdmin.value) {
+    return [
+      { to: '/admin/settings', label: 'Ajustes' },
+    ]
+  }
+
+  const links = [
+    { to: '/', label: 'Inicio' },
+  ]
+
+  if (!isAuthenticated.value) {
+    links.push({ to: '/calculadora', label: 'Cotizador' })
+  }
+
+  if (showOrdersLink.value) {
+    links.push({ to: '/ordenes', label: 'Mis pedidos' })
+  }
+
+  if (isAdmin.value) {
+    links.push({ to: '/admin/ordenes', label: 'Gestion pedidos' })
+  }
+
+  return links
+})
+
+const primaryCta = computed(() => {
+  if (isSuperAdmin.value) return { to: '/admin/usuarios', label: 'Ir al panel de usuarios' }
+  if (isAuthenticated.value) return { to: '/calculadora', label: 'Nueva cotizacion' }
+  return { to: '/register', label: 'Empieza ahora' }
+})
+
 // WhatsApp link with pre-filled message
 const whatsappLink = computed(() => {
   const phone = '593985295277'
-  const message = encodeURIComponent('Buen día, quisiera que me ayude con información sobre...')
+  const message = encodeURIComponent('Buen dia, quisiera ayuda para importar una compra desde Amazon.')
   return `https://wa.me/${phone}?text=${message}`
 })
 
+function isLinkActive(to: string) {
+  if (to === '/') return route.path === '/'
+  return route.path.startsWith(to)
+}
+
 function handleLogout() {
   authStore.logout()
+  mobileMenuOpen.value = false
   router.push('/')
 }
+
+function toggleMobileMenu() {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    mobileMenuOpen.value = false
+  }
+)
+
+watch(mobileMenuOpen, async (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+
+  if (open) {
+    await nextTick()
+    if (!mobilePanel.value) return
+
+    mobileTimeline?.kill()
+    mobileTimeline = gsap.timeline({ defaults: { ease: 'power2.out' } })
+    mobileTimeline
+      .fromTo(
+        mobilePanel.value,
+        { autoAlpha: 0, y: -12, scale: 0.98 },
+        { autoAlpha: 1, y: 0, scale: 1, duration: 0.26 }
+      )
+      .fromTo(
+        mobilePanel.value.querySelectorAll('.mobile-item'),
+        { autoAlpha: 0, y: 12 },
+        { autoAlpha: 1, y: 0, duration: 0.24, stagger: 0.04 },
+        '-=0.12'
+      )
+  } else if (mobilePanel.value) {
+    mobileTimeline?.kill()
+    mobileTimeline = gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+    mobileTimeline.to(mobilePanel.value, { autoAlpha: 0, y: -8, duration: 0.15 })
+  }
+})
+
+onUnmounted(() => {
+  mobileTimeline?.kill()
+  document.body.style.overflow = ''
+})
 </script>
 
 <template>
   <nav class="fixed top-0 left-0 right-0 z-50">
-    <!-- Solid navbar when scrolled past hero -->
-    <div 
-      v-if="navScrolled"
-      class="nav-solid"
-    />
-    <!-- Gradient overlay when at top (integrated with hero) -->
-    <div 
+    <div v-if="navScrolled" :class="forceWhiteNavText ? 'nav-solid-dark' : 'nav-solid'" />
+    <div
       v-else
-      class="nav-gradient"
-      :style="{ height: `${navGradientHeight.value}px` }"
+      :class="forceWhiteNavText ? 'nav-gradient-dark' : 'nav-gradient'"
+      :style="{ height: `${navGradientHeight}px` }"
     />
-    <!-- Main Navbar -->
-    <div class="relative">
+
+    <div class="relative border-b" :class="shouldUseDarkNavText ? 'border-[#cfd9db]' : 'border-white/20'">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <!-- Logo - SuperAdmin goes to calculator, others go to home -->
+        <div class="h-16 flex items-center justify-between gap-4">
           <RouterLink :to="isSuperAdmin ? '/admin/calculadora' : '/'" class="flex items-center gap-3 group">
-            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 backdrop-blur',
-                         navScrolled ? 'bg-zinc-700' : 'bg-teal-500/50']">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 backdrop-blur', navScrolled ? 'bg-[#1a4a61] text-white' : 'bg-[#35627a] text-white shadow-lg shadow-[#35627a]/20']">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
+            </div>
+            <div class="hidden sm:block leading-tight">
+              <p :class="['font-display text-xl tracking-wider', shouldUseDarkNavText ? 'text-[#1a3f54]' : 'text-white']">AMZ Express</p>
+              <p :class="['text-[11px] uppercase tracking-[0.16em]', shouldUseDarkNavText ? 'text-[#637782]' : 'text-zinc-200']">Importacion guiada</p>
             </div>
           </RouterLink>
 
-          <!-- Desktop Navigation -->
           <div class="hidden lg:flex items-center gap-1">
-            <template v-if="!isSuperAdmin">
-              <RouterLink 
-                to="/" 
-                :class="['px-4 py-2 font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
-              >
-                Inicio
-              </RouterLink>
+            <RouterLink
+              v-for="link in mainLinks"
+              :key="link.to"
+              :to="link.to"
+              :class="[
+                'px-3 py-2 rounded-lg font-display text-base tracking-wider transition-all duration-150',
+                isLinkActive(link.to)
+                  ? shouldUseDarkNavText
+                    ? 'bg-[#1a4a61] text-white'
+                    : 'bg-white/15 text-white'
+                  : shouldUseDarkNavText
+                    ? 'text-[#21495f] hover:bg-[#1a4a61] hover:text-white'
+                    : 'text-white hover:text-[#ffd0cb]'
+              ]"
+            >
+              {{ link.label }}
+            </RouterLink>
 
-              <RouterLink 
-                to="/calculadora" 
-                :class="['px-4 py-2 font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
-              >
-                Cotiza tus compras
-              </RouterLink>
-
-              <RouterLink 
-                v-if="showOrdersLink" 
-                to="/ordenes" 
-                :class="['px-4 py-2 font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
-              >
-                Mis Pedidos
-              </RouterLink>
-
-              <!-- WhatsApp contact for regular users -->
-              <a 
-                v-if="isRegularUser"
-                :href="whatsappLink"
-                target="_blank"
-                rel="noopener noreferrer"
-                :class="['px-4 py-2 font-display text-base tracking-wider transition-colors duration-150 flex items-center gap-2',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
-              >
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                Contactanos
-              </a>
-
-              <RouterLink 
-                v-if="isAdmin" 
-                to="/admin/ordenes" 
-                :class="['px-4 py-2 font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
-              >
-                Gestionar Pedidos
-              </RouterLink>
-
-              <RouterLink 
-                v-if="isSuperAdmin" 
-                to="/admin/calculadora" 
-                :class="['px-4 py-2 font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
-              >
-                Cotización SuperAdmin
-              </RouterLink>
-            </template>
+            <a
+              v-if="isRegularUser"
+              :href="whatsappLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              :class="[
+                'ml-2 px-3 py-2 rounded-lg font-display text-base tracking-wider transition-all duration-150',
+                shouldUseDarkNavText ? 'text-[#21495f] hover:bg-[#1a4a61] hover:text-white' : 'text-white hover:text-[#ffd0cb]'
+              ]"
+            >
+              Soporte WhatsApp
+            </a>
           </div>
 
-          <!-- Auth Section -->
-          <div class="flex items-center gap-4">
+          <div class="hidden lg:flex items-center gap-3">
             <template v-if="isAuthenticated">
-              <div class="hidden sm:flex items-center gap-2">
-                <div :class="['w-8 h-8 rounded-full backdrop-blur flex items-center justify-center text-sm font-bold transition-all duration-300',
-                             navScrolled ? 'bg-zinc-700 text-white' : 'bg-white/20 text-white']">
+              <div class="hidden lg:flex items-center">
+                <div :class="['w-8 h-8 rounded-full backdrop-blur flex items-center justify-center text-sm font-bold transition-all duration-300', navScrolled ? 'bg-[#1a4a61] text-white' : 'bg-[#35627a] text-white']">
                   {{ userName.charAt(0).toUpperCase() }}
                 </div>
-                <span :class="['font-display text-base tracking-wider transition-colors duration-150',
-                               navScrolled ? 'text-black font-bold' : 'text-white']">{{ userName }}</span>
               </div>
-              <button 
+              <button
                 @click="handleLogout"
-                :class="['font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
+                :class="['font-display text-base tracking-wider transition-colors duration-150', shouldUseDarkNavText ? 'text-[#21495f] hover:text-[#102d3e]' : 'text-white hover:text-[#ffd0cb]']"
               >
-                Cerrar Sesión
+                Cerrar sesion
               </button>
             </template>
-            
+
             <template v-else>
-              <RouterLink 
+              <RouterLink
                 to="/login"
-                :class="['hidden sm:block font-display text-base tracking-wider transition-colors duration-150',
-                         navScrolled ? 'text-black font-bold hover:text-white' : 'text-white hover:text-teal-400']"
+                :class="['font-display text-base tracking-wider transition-colors duration-150', shouldUseDarkNavText ? 'text-[#21495f] hover:text-[#102d3e]' : 'text-white hover:text-[#ffd0cb]']"
               >
-                Iniciar Sesión
-              </RouterLink>
-              <RouterLink 
-                to="/register"
-                :class="['px-5 py-2 rounded-lg font-display text-base tracking-wider transition-all duration-150 font-bold',
-                         navScrolled ? 'bg-zinc-800 hover:bg-white text-white hover:text-zinc-800' : 'bg-white hover:bg-zinc-900 text-teal-600 hover:text-white']"
-              >
-                Registrarse
+                Ingresar
               </RouterLink>
             </template>
+
+            <MotionButton :to="primaryCta.to" :label="primaryCta.label" variant="primary" size="md" />
           </div>
+
+          <button
+            type="button"
+            class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors"
+            :class="shouldUseDarkNavText ? 'border-[#1a4a61]/50 text-[#1a4a61]' : 'border-white/40 text-white'"
+            @click="toggleMobileMenu"
+            :aria-expanded="mobileMenuOpen"
+            aria-label="Abrir menu"
+          >
+            <svg v-if="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
+
+    <Transition name="mobile-menu">
+      <div v-if="mobileMenuOpen" class="lg:hidden mobile-overlay" @click.self="mobileMenuOpen = false">
+        <div ref="mobilePanel" class="mobile-panel">
+          <div class="space-y-1">
+            <RouterLink
+              v-for="link in mainLinks"
+              :key="`mobile-${link.to}`"
+              :to="link.to"
+              :class="[
+                'mobile-item block px-3 py-2 rounded-lg font-display text-xl tracking-wider transition-colors',
+                isLinkActive(link.to) ? 'bg-[#dce8ea] text-[#1a4a61]' : 'text-[#21495f] hover:text-[#b46258]'
+              ]"
+            >
+              {{ link.label }}
+            </RouterLink>
+          </div>
+
+          <a
+            v-if="isRegularUser"
+            :href="whatsappLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mobile-item mt-4 block px-3 py-2 rounded-lg font-display text-xl tracking-wider text-[#21495f] hover:text-[#b46258]"
+          >
+            Soporte WhatsApp
+          </a>
+
+          <div class="mobile-item mt-6 pt-6 border-t border-[#cfd9db] space-y-3">
+            <template v-if="isAuthenticated">
+              <div class="mx-auto w-9 h-9 rounded-full bg-[#1a4a61] text-white flex items-center justify-center text-sm font-bold">
+                {{ userName.charAt(0).toUpperCase() }}
+              </div>
+              <button @click="handleLogout" class="w-full py-2 rounded-lg bg-[#e5ecee] text-[#1a4a61] font-display tracking-wider">Cerrar sesion</button>
+            </template>
+            <template v-else>
+              <RouterLink to="/login" class="block w-full text-center py-2 rounded-lg border border-[#c3d0d4] text-[#1a4a61] font-display tracking-wider">Ingresar</RouterLink>
+            </template>
+            <MotionButton :to="primaryCta.to" :label="primaryCta.label" variant="primary" size="md" block />
+          </div>
+        </div>
+      </div>
+    </Transition>
   </nav>
 </template>
 
 <style scoped>
-/* Gradient that descends from top — integrated with hero */
 .nav-gradient {
   position: absolute;
   top: 0;
@@ -176,25 +284,78 @@ function handleLogout() {
   right: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.85) 0%,
-    rgba(0, 0, 0, 0.6) 40%,
-    rgba(0, 0, 0, 0) 100%
+    rgba(245, 247, 247, 0.95) 0%,
+    rgba(245, 247, 247, 0.72) 46%,
+    rgba(245, 247, 247, 0) 100%
   );
   transition: height 0.05s linear;
   pointer-events: none;
 }
 
-/* Solid navbar — teal background with dark bar when scrolled */
+.nav-gradient-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 18, 30, 0.95) 0%,
+    rgba(9, 25, 39, 0.74) 46%,
+    rgba(9, 25, 39, 0) 100%
+  );
+  transition: height 0.05s linear;
+  pointer-events: none;
+}
+
 .nav-solid {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 64px;
-  background: #14b8a6;
-  border-top: 3px solid #0a0a0a;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(90deg, #f5f7f7 0%, #e8eff1 58%, #e5eaef 100%);
+  border-top: 2px solid #dce4e8;
+  box-shadow: 0 8px 20px rgba(26, 74, 97, 0.12);
   animation: nav-appear 0.2s ease-out;
+}
+
+.nav-solid-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: linear-gradient(90deg, rgba(6, 18, 30, 0.95) 0%, rgba(17, 41, 59, 0.94) 55%, rgba(22, 49, 67, 0.95) 100%);
+  border-top: 2px solid rgba(153, 186, 206, 0.18);
+  box-shadow: 0 8px 20px rgba(3, 10, 18, 0.38);
+  animation: nav-appear 0.2s ease-out;
+}
+
+.mobile-overlay {
+  position: fixed;
+  inset: 64px 0 0;
+  background: rgba(52, 76, 91, 0.16);
+  backdrop-filter: blur(3px);
+  padding: 1rem;
+}
+
+.mobile-panel {
+  max-width: 36rem;
+  margin: 0 auto;
+  border-radius: 1rem;
+  border: 1px solid rgba(53, 98, 122, 0.2);
+  background: rgba(245, 247, 247, 0.95);
+  padding: 1rem;
+}
+
+.mobile-menu-enter-active,
+.mobile-menu-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.mobile-menu-enter-from,
+.mobile-menu-leave-to {
+  opacity: 0;
 }
 
 @keyframes nav-appear {
@@ -208,4 +369,3 @@ function handleLogout() {
   }
 }
 </style>
-

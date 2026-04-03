@@ -5,6 +5,7 @@ import { useOrderStore } from '@/stores/order'
 import { useAuthStore } from '@/stores/auth'
 import OrderProgress from '@/components/OrderProgress.vue'
 import FadeIn from '@/components/FadeIn.vue'
+import MotionButton from '@/components/MotionButton.vue'
 import type { Order, OrderStatus } from '@/types'
 
 const orderStore = useOrderStore()
@@ -145,28 +146,28 @@ function formatCurrency(value: number | undefined): string {
 </script>
 
 <template>
-  <div class="min-h-screen pt-[64px] pb-16">
-    <!-- Background -->
-    <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-teal-500/5 blur-3xl" />
+  <div class="orders-page min-h-screen pt-[64px] pb-16 relative overflow-hidden">
+    <div class="orders-backdrop absolute inset-0 pointer-events-none" />
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-[#35627A]/20 blur-3xl pointer-events-none" />
 
     <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <FadeIn direction="up">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h1 class="text-3xl font-bold text-white">Mis Pedidos</h1>
-            <p class="text-zinc-400 mt-1">Seguimiento de todos tus pedidos</p>
+        <section class="orders-hero mb-7">
+          <div class="flex-1">
+            <p class="orders-kicker">Consola de seguimiento</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-white">Mis pedidos</h1>
+            <p class="orders-subtitle mt-2">Seguimiento integral de estados, pagos y entregas de tus importaciones.</p>
           </div>
-          <RouterLink to="/calculadora" class="btn-primary px-5 py-2.5">
-            Nuevo Pedido
-          </RouterLink>
-        </div>
+          <div class="orders-hero__actions">
+            <span class="orders-stat-pill">{{ filteredOrders.length }} activos</span>
+          </div>
+        </section>
       </FadeIn>
 
       <!-- Filters -->
       <FadeIn v-if="orders.length > 0" direction="up" :delay="100">
-        <div class="mb-6 p-4 glass rounded-xl border border-white/5">
+        <div class="orders-filters mb-6 p-4 rounded-xl">
           <div class="flex flex-wrap gap-4 items-center">
             <!-- Search by ID or product -->
             <div class="relative flex-1 min-w-[200px]">
@@ -179,7 +180,7 @@ function formatCurrency(value: number | undefined): string {
                 v-model="searchQuery"
                 type="text"
                 placeholder="Buscar por #ID o producto..."
-                class="w-full pl-10 pr-4 py-2.5 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-teal-500/50"
+                class="w-full pl-10 pr-4 py-2.5 orders-input rounded-lg text-white placeholder-zinc-500 focus:outline-none"
               />
             </div>
 
@@ -188,20 +189,20 @@ function formatCurrency(value: number | undefined): string {
               <input
                 v-model="dateFrom"
                 type="date"
-                class="px-3 py-2.5 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-white text-sm focus:outline-none focus:border-teal-500/50"
+                class="px-3 py-2.5 orders-input rounded-lg text-white text-sm focus:outline-none"
               />
               <span class="text-zinc-500">-</span>
               <input
                 v-model="dateTo"
                 type="date"
-                class="px-3 py-2.5 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-white text-sm focus:outline-none focus:border-teal-500/50"
+                class="px-3 py-2.5 orders-input rounded-lg text-white text-sm focus:outline-none"
               />
             </div>
 
             <!-- Clear filters -->
             <button
               @click="clearFilters"
-              class="px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition-colors bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50"
+              class="px-4 py-2.5 text-sm text-zinc-300 hover:text-white transition-colors bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 border border-[#a6a9d0]/30"
             >
               Limpiar
             </button>
@@ -217,14 +218,14 @@ function formatCurrency(value: number | undefined): string {
       <!-- Loading -->
       <FadeIn v-if="loading" direction="up">
         <div class="flex justify-center py-12">
-          <div class="w-12 h-12 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+          <div class="w-12 h-12 border-4 border-[#a6a9d0]/20 border-t-[#e5aea9] rounded-full animate-spin" />
         </div>
       </FadeIn>
 
       <!-- Empty State -->
       <FadeIn v-else-if="orders.length === 0" direction="up">
-        <div class="glass rounded-2xl p-8 sm:p-12 text-center border border-white/5">
-          <div class="w-20 h-20 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div class="orders-empty rounded-2xl p-8 sm:p-12 text-center">
+          <div class="w-20 h-20 bg-zinc-800/60 rounded-full flex items-center justify-center mx-auto mb-6 border border-[#a6a9d0]/30">
             <svg class="w-10 h-10 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
@@ -232,12 +233,20 @@ function formatCurrency(value: number | undefined): string {
           <h3 class="text-xl font-bold mb-2 text-white">No tienes pedidos</h3>
           <p v-if="searchQuery || dateFrom || dateTo" class="text-zinc-400 mb-6">No se encontraron pedidos con esos filtros</p>
           <p v-else class="text-zinc-400 mb-6">Empieza calculando el precio de un producto</p>
-          <RouterLink v-if="!searchQuery && !dateFrom && !dateTo" to="/calculadora" class="btn-primary inline-block px-6 py-3">
-            Ir a la Calculadora
-          </RouterLink>
-          <button v-else @click="clearFilters" class="btn-primary inline-block px-6 py-3">
-            Limpiar filtros
-          </button>
+          <MotionButton
+            v-if="!searchQuery && !dateFrom && !dateTo"
+            to="/calculadora"
+            label="Ir a la Calculadora"
+            variant="primary"
+            size="lg"
+          />
+          <MotionButton
+            v-else
+            @click="clearFilters"
+            label="Limpiar filtros"
+            variant="primary"
+            size="lg"
+          />
         </div>
       </FadeIn>
 
@@ -249,7 +258,7 @@ function formatCurrency(value: number | undefined): string {
           direction="up"
           :delay="index * 100"
         >
-          <div class="glass rounded-2xl p-6 card-hover border border-white/5">
+          <div class="orders-card rounded-2xl p-6 card-hover">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <!-- Order Info -->
               <div class="flex-1">
@@ -266,15 +275,15 @@ function formatCurrency(value: number | undefined): string {
                 <p v-if="order.productAsin" class="text-zinc-500 text-sm mb-2">
                   ASIN: {{ order.productAsin }}
                 </p>
-                <p class="text-zinc-500 text-sm">
+                <p class="text-zinc-400 text-sm">
                   {{ formatDate(order.createdAt) }}
                 </p>
               </div>
 
               <!-- Price -->
               <div class="text-right lg:text-center">
-                <p class="text-sm text-zinc-500">Total</p>
-                <p class="text-2xl font-bold text-teal-400">
+                <p class="text-sm text-zinc-400">Total</p>
+                <p class="text-2xl font-bold text-[#e5aea9]">
                   {{ formatCurrency(order.totalPrice) }}
                 </p>
               </div>
@@ -283,7 +292,7 @@ function formatCurrency(value: number | undefined): string {
               <div class="flex items-center gap-4">
                 <RouterLink
                   :to="`/ordenes/${order.id}`"
-                  class="bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 hover:border-zinc-600 px-6 py-2.5 rounded-xl font-medium transition-all text-white"
+                  class="bg-zinc-800/80 hover:bg-zinc-700 border border-[#a6a9d0]/35 hover:border-[#e5aea9]/45 px-6 py-2.5 rounded-xl font-medium transition-all text-white"
                 >
                   Ver Detalle
                 </RouterLink>
@@ -291,22 +300,22 @@ function formatCurrency(value: number | undefined): string {
             </div>
 
             <!-- Progress -->
-            <div class="mt-6 pt-6 border-t border-white/5">
+            <div class="mt-6 pt-6 border-t border-[#a6a9d0]/20">
               <OrderProgress :current-status="order.status" />
             </div>
           </div>
         </FadeIn>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
-          <div class="text-sm text-zinc-400">
+        <div v-if="totalPages > 1" class="flex items-center justify-between mt-8 pt-6 border-t border-[#a6a9d0]/20">
+          <div class="text-sm text-zinc-300">
             Página {{ currentPage }} de {{ totalPages }}
           </div>
           <div class="flex items-center gap-2">
             <button
               @click="prevPage"
               :disabled="currentPage === 1"
-              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-zinc-800 hover:bg-zinc-700 text-white"
+              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-zinc-800 hover:bg-zinc-700 text-white border border-[#a6a9d0]/30"
             >
               Anterior
             </button>
@@ -319,8 +328,8 @@ function formatCurrency(value: number | undefined): string {
                 :class="[
                   'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                   page === currentPage 
-                    ? 'bg-teal-500 text-white' 
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                    ? 'bg-[#35627A] text-white' 
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-[#a6a9d0]/30'
                 ]"
               >
                 {{ page }}
@@ -330,7 +339,7 @@ function formatCurrency(value: number | undefined): string {
             <button
               @click="nextPage"
               :disabled="currentPage === totalPages"
-              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-zinc-800 hover:bg-zinc-700 text-white"
+              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-zinc-800 hover:bg-zinc-700 text-white border border-[#a6a9d0]/30"
             >
               Siguiente
             </button>
@@ -340,4 +349,116 @@ function formatCurrency(value: number | undefined): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+.orders-page {
+  background:
+    radial-gradient(circle at 10% 14%, rgba(53, 98, 122, 0.2), transparent 36%),
+    radial-gradient(circle at 88% 18%, rgba(166, 169, 208, 0.16), transparent 34%),
+    linear-gradient(180deg, #091018 0%, #060b11 100%);
+}
+
+.orders-backdrop {
+  background-image: radial-gradient(rgba(229, 174, 169, 0.08) 0.6px, transparent 0.6px);
+  background-size: 3px 3px;
+  opacity: 0.2;
+}
+
+.orders-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(166, 169, 208, 0.26);
+  background:
+    linear-gradient(150deg, rgba(8, 21, 31, 0.92), rgba(7, 16, 24, 0.82)),
+    rgba(8, 20, 30, 0.78);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.4);
+}
+
+.orders-kicker {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  padding: 0.28rem 0.62rem;
+  color: #f2d2cf;
+  border: 1px solid rgba(229, 174, 169, 0.35);
+  background: rgba(229, 174, 169, 0.12);
+  margin-bottom: 0.5rem;
+}
+
+.orders-subtitle {
+  color: #b6c7cf;
+}
+
+.orders-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.orders-stat-pill {
+  font-size: 0.72rem;
+  border-radius: 9999px;
+  padding: 0.3rem 0.64rem;
+  color: #d8e8ef;
+  border: 1px solid rgba(166, 169, 208, 0.3);
+  background: rgba(10, 27, 38, 0.6);
+}
+
+.orders-filters {
+  border: 1px solid rgba(166, 169, 208, 0.24);
+  background:
+    linear-gradient(140deg, rgba(8, 20, 30, 0.88), rgba(8, 19, 28, 0.72)),
+    rgba(8, 20, 30, 0.68);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.orders-input {
+  background: rgba(5, 14, 22, 0.84);
+  border: 1px solid rgba(166, 169, 208, 0.24);
+}
+
+.orders-input:focus {
+  border-color: rgba(229, 174, 169, 0.45);
+  box-shadow: 0 0 0 3px rgba(229, 174, 169, 0.16);
+}
+
+.orders-empty {
+  border: 1px solid rgba(166, 169, 208, 0.24);
+  background:
+    linear-gradient(140deg, rgba(8, 20, 30, 0.88), rgba(8, 19, 28, 0.72)),
+    rgba(8, 20, 30, 0.68);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.34);
+}
+
+.orders-card {
+  border: 1px solid rgba(166, 169, 208, 0.24);
+  background:
+    linear-gradient(145deg, rgba(8, 20, 30, 0.92), rgba(7, 16, 25, 0.82)),
+    rgba(8, 20, 30, 0.78);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.3);
+}
+
+.orders-card:hover {
+  border-color: rgba(229, 174, 169, 0.34);
+}
+
+@media (max-width: 640px) {
+  .orders-hero {
+    align-items: flex-start;
+  }
+
+  .orders-hero__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+</style>
 

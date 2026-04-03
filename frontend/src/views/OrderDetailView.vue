@@ -84,7 +84,7 @@ function formatCurrency(value: number | undefined): string {
 </script>
 
 <template>
-  <div class="min-h-screen pt-[64px] pb-16">
+  <div class="order-detail-page min-h-screen pt-[64px] pb-16">
     <!-- Background -->
     <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 pointer-events-none" />
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-96 bg-teal-500/5 blur-3xl" />
@@ -92,7 +92,7 @@ function formatCurrency(value: number | undefined): string {
     <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Back Button -->
       <FadeIn direction="up">
-        <RouterLink to="/ordenes" class="inline-flex items-center text-zinc-400 hover:text-white mb-6 transition-colors group">
+        <RouterLink to="/ordenes" class="inline-flex items-center text-zinc-200 hover:text-white mb-6 transition-colors group">
           <svg class="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -216,4 +216,49 @@ function formatCurrency(value: number | undefined): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+.order-detail-page {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(53, 98, 122, 0.2), transparent 36%),
+    radial-gradient(circle at 82% 14%, rgba(166, 169, 208, 0.16), transparent 34%),
+    linear-gradient(180deg, #091019 0%, #050b12 100%);
+}
+
+.order-detail-page .glass {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 31, 0.94), rgba(8, 18, 28, 0.84)),
+    rgba(8, 19, 29, 0.78);
+  border: 1px solid rgba(166, 169, 208, 0.26) !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+}
+
+.order-detail-page .text-zinc-500 {
+  color: #aabdc7 !important;
+}
+
+.order-detail-page .text-zinc-400 {
+  color: #b6c7cf !important;
+}
+
+.order-detail-page .text-zinc-300 {
+  color: #d6e2e8 !important;
+}
+
+.order-detail-page .text-zinc-600 {
+  color: #9fb4bf !important;
+}
+
+.order-detail-page .text-teal-400 {
+  color: #e5aea9 !important;
+}
+
+.order-detail-page .text-teal-300 {
+  color: #f2cbc7 !important;
+}
+
+.order-detail-page .border-white\/5 {
+  border-color: rgba(166, 169, 208, 0.24) !important;
+}
+</style>
 
