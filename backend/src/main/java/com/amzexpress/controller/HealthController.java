@@ -16,7 +16,8 @@ public class HealthController {
         return ResponseEntity.ok(Map.of(
                 "status", "UP",
                 "service", "Amz Express API",
-                "version", "1.0.0"
+                "version", "1.0.0",
+                "developedBy", "Kevin Xavier Aguilar Velasco"
         ));
     }
 }
