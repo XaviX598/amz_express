@@ -4,6 +4,7 @@ import com.amzexpress.entity.OrderStatus;
 import com.amzexpress.entity.PaymentMethod;
 import com.amzexpress.entity.ShippingOption;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +34,9 @@ public class CreateOrderRequest {
     private PaymentMethod paymentMethod;
     
     private String paymentReference;
+
+    @NotBlank(message = "El código de seguridad es obligatorio")
+    private String securityCode;
     
     private String amazonUrl;
     

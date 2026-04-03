@@ -7,6 +7,7 @@ import { addressService, type Address } from '@/services/address'
 import { cartService } from '@/services/cart'
 import { pricingService } from '@/services/pricing'
 import { orderService } from '@/services/order'
+import { securityService } from '@/services/security'
 import FadeIn from '@/components/FadeIn.vue'
 import MotionButton from '@/components/MotionButton.vue'
 import type { PaymentMethod, ShippingOption } from '@/types'
@@ -97,6 +98,9 @@ const processingOrder = ref(false)
 const paymentSettings = ref<PaymentSettings | null>(null)
 const selectedShippingOption = ref<ShippingOption>('PICKUP')
 const selectedPaymentMethod = ref<PaymentMethod>('TRANSFERENCIA')
+const purchaseSecurityCode = ref('')
+const securityCodeVerified = ref(false)
+const verifyingSecurityCode = ref(false)
 const paymentReference = ref('')
 const selectedTransferBankCode = ref<TransferBank['code']>('PICHINCHA')
 const transferProofFile = ref<File | null>(null)
@@ -172,6 +176,9 @@ function loadPayPalSdk(clientId: string): Promise<void> {
 // Load PayPal button
 async function loadPayPalButton() {
   if (paypalLoading.value || paypalLoaded.value) return
+
+  const securityReady = await ensureSecurityCodeValidated()
+  if (!securityReady) return
 
   const clientId = getPayPalClientId()
   if (!clientId) {
@@ -250,6 +257,13 @@ watch(selectedPaymentMethod, (method) => {
       void loadPayPalButton()
     }, 100)
   } else {
+    paypalLoaded.value = false
+  }
+})
+
+watch(purchaseSecurityCode, () => {
+  securityCodeVerified.value = false
+  if (selectedPaymentMethod.value === 'PAYPAL') {
     paypalLoaded.value = false
   }
 })
@@ -355,6 +369,39 @@ async function saveAddress() {
   } finally {
     savingAddress.value = false
   }
+}
+
+async function validateSecurityCode(): Promise<boolean> {
+  const code = purchaseSecurityCode.value.trim()
+  if (!code) {
+    error.value = 'Ingresa el código de seguridad para continuar'
+    securityCodeVerified.value = false
+    return false
+  }
+
+  verifyingSecurityCode.value = true
+  try {
+    const valid = await securityService.verifySecurityCode(code)
+    securityCodeVerified.value = valid
+    error.value = null
+    if (valid && selectedPaymentMethod.value === 'PAYPAL' && !paypalLoaded.value) {
+      setTimeout(() => {
+        void loadPayPalButton()
+      }, 100)
+    }
+    return valid
+  } catch (err: any) {
+    securityCodeVerified.value = false
+    error.value = err.message || 'Código de seguridad inválido'
+    return false
+  } finally {
+    verifyingSecurityCode.value = false
+  }
+}
+
+async function ensureSecurityCodeValidated(): Promise<boolean> {
+  if (securityCodeVerified.value) return true
+  return await validateSecurityCode()
 }
 
 async function deleteAddress(addressId: number) {
@@ -499,6 +546,9 @@ function onTransferProofSelected(event: Event) {
 }
 
 async function confirmOrder() {
+  const securityReady = await ensureSecurityCodeValidated()
+  if (!securityReady) return
+
   if (requiresShippingAddress.value && !selectedAddressId.value) {
     error.value = 'Selecciona una dirección de envío'
     return
@@ -529,6 +579,9 @@ async function confirmOrder() {
 }
 
 async function confirmOrderWithPayment() {
+  const securityReady = await ensureSecurityCodeValidated()
+  if (!securityReady) return
+
   processingOrder.value = true
   error.value = null
   
@@ -546,7 +599,8 @@ async function confirmOrderWithPayment() {
         weight: pkg.subtotalWeight,
         shippingOption: selectedShippingOption.value,
         paymentMethod: selectedPaymentMethod.value,
-        paymentReference: orderPaymentReference
+        paymentReference: orderPaymentReference,
+        securityCode: purchaseSecurityCode.value.trim()
       })
       createdOrderIds.push(createdOrder.id)
     }
@@ -803,6 +857,34 @@ onMounted(() => {
                 </div>
               </template>
             </div>
+
+            <!-- Security code -->
+            <div class="rounded-2xl border border-zinc-700/50 bg-zinc-900/60 p-6">
+              <h2 class="text-xl font-semibold text-white mb-4">Código de seguridad de compra</h2>
+              <p class="text-zinc-400 text-sm mb-4">
+                Para confirmar pedidos se requiere el código de seguridad del proyecto.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <input
+                  v-model="purchaseSecurityCode"
+                  type="password"
+                  placeholder="Ingresa el código"
+                  class="flex-1 bg-zinc-800/80 border border-zinc-700/60 rounded-xl py-3 px-4 text-white placeholder-zinc-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  @click="validateSecurityCode"
+                  :disabled="verifyingSecurityCode"
+                  class="px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/60 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {{ verifyingSecurityCode ? 'Validando...' : 'Validar código' }}
+                </button>
+              </div>
+              <p v-if="securityCodeVerified" class="text-emerald-400 text-xs mt-3">
+                Código validado correctamente.
+              </p>
+            </div>
+
             <!-- Payment method selection -->
             <div class="rounded-2xl border border-zinc-700/50 bg-zinc-900/60 p-6">
               <h2 class="text-xl font-semibold text-white mb-4">Metodo de pago</h2>
@@ -926,7 +1008,7 @@ onMounted(() => {
             <!-- Confirm button -->
             <MotionButton
               @click="confirmOrder"
-              :disabled="processingOrder || (requiresShippingAddress && !selectedAddressId) || validPackages.length === 0"
+              :disabled="processingOrder || !securityCodeVerified || (requiresShippingAddress && !selectedAddressId) || validPackages.length === 0"
               :label="processingOrder ? 'Procesando...' : selectedPaymentMethod === 'TRANSFERENCIA' ? 'Pagar y enviar comprobante' : 'Confirmar compra'"
               variant="primary"
               size="lg"

@@ -13,6 +13,7 @@ Sistema de importación de productos desde Amazon a Ecuador.
 
 ```bash
 # En el directorio raíz
+export APP_MASTER_SECURITY_CODE="cambia-este-codigo"
 docker-compose up -d
 ```
 
@@ -35,6 +36,7 @@ CREATE DATABASE amzexpress;
 cd backend
 cp .env.example .env
 # Editar .env con tu password de PostgreSQL
+export APP_MASTER_SECURITY_CODE="cambia-este-codigo"
 
 mvn spring-boot:run
 ```

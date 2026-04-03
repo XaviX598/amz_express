@@ -52,7 +52,8 @@ public class UserController {
             @RequestParam String name,
             @RequestParam String email,
             @RequestParam String password,
+            @RequestParam String securityCode,
             Authentication authentication) {
-        return ResponseEntity.ok(userService.createAdmin(name, email, password, authentication.getName()));
+        return ResponseEntity.ok(userService.createAdmin(name, email, password, securityCode, authentication.getName()));
     }
 }

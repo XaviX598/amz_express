@@ -49,12 +49,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
-                        .requestMatchers("/api/orders/**").permitAll() // For demo purposes
+                        .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers("/api/pricing/**").permitAll() // For demo purposes
-                        .requestMatchers("/api/amazon/**").permitAll() // Amazon scraper endpoint
+                        .requestMatchers("/api/amazon/**").authenticated()
                         .requestMatchers("/api/payment/**").permitAll() // Payment settings
-                        .requestMatchers("/api/admin/fix-orders-table").permitAll() // Fix database
+                        .requestMatchers("/api/admin/fix-orders-table").hasRole("SUPERADMIN")
                         .requestMatchers("/api/admin/settings/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers("/api/security-code/**").authenticated()
                         .requestMatchers("/api/users/**").hasAnyRole("ADMIN", "SUPERADMIN")
                         .anyRequest().authenticated()
                 )

@@ -19,6 +19,7 @@ const newAdminForm = ref({
   name: '',
   email: '',
   password: '',
+  securityCode: '',
 })
 const createLoading = ref(false)
 
@@ -113,7 +114,7 @@ async function deleteUser() {
 }
 
 async function createAdmin() {
-  if (!newAdminForm.value.name || !newAdminForm.value.email || !newAdminForm.value.password) {
+  if (!newAdminForm.value.name || !newAdminForm.value.email || !newAdminForm.value.password || !newAdminForm.value.securityCode) {
     uiStore.warning('Todos los campos son requeridos')
     return
   }
@@ -123,11 +124,12 @@ async function createAdmin() {
     const newAdmin = await userService.createAdmin(
       newAdminForm.value.name,
       newAdminForm.value.email,
-      newAdminForm.value.password
+      newAdminForm.value.password,
+      newAdminForm.value.securityCode
     )
     users.value.unshift(newAdmin)
     showCreateModal.value = false
-    newAdminForm.value = { name: '', email: '', password: '' }
+    newAdminForm.value = { name: '', email: '', password: '', securityCode: '' }
     uiStore.success('Administrador creado correctamente')
   } catch (err) {
     uiStore.error(err instanceof Error ? err.message : 'Error al crear administrador')
@@ -507,6 +509,15 @@ function showOrderCount(role: Role): boolean {
                   class="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-teal-500 transition-colors duration-200 focus:scale-[1.01]"
                 />
               </div>
+              <div>
+                <label class="block text-sm font-medium text-zinc-200 mb-2">Código de seguridad</label>
+                <input
+                  v-model="newAdminForm.securityCode"
+                  type="password"
+                  placeholder="Código maestro"
+                  class="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-teal-500 transition-colors duration-200 focus:scale-[1.01]"
+                />
+              </div>
             </div>
 
             <div class="flex gap-4">
@@ -518,7 +529,7 @@ function showOrderCount(role: Role): boolean {
               </button>
               <MotionButton
                 @click="createAdmin"
-                :disabled="createLoading"
+                :disabled="createLoading || !newAdminForm.name || !newAdminForm.email || !newAdminForm.password || !newAdminForm.securityCode"
                 :label="createLoading ? 'Creando...' : 'Crear'"
                 variant="primary"
                 size="md"

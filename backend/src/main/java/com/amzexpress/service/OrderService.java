@@ -25,9 +25,15 @@ public class OrderService {
     private final CustomUserDetailsService userDetailsService;
     private final CalculatorSettingsService settingsService;
     private final EmailService emailService;
+    private final SecurityCodeService securityCodeService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, String userEmail) {
+        securityCodeService.validateOrThrow(
+                request.getSecurityCode(),
+                "Código de seguridad inválido para comprar"
+        );
+
         User user = userDetailsService.getUserByEmail(userEmail);
 
         // Calculate pricing

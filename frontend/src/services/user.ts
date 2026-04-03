@@ -21,8 +21,8 @@ export const userService = {
     await api.delete(`/users/${userId}`)
   },
 
-  async createAdmin(name: string, email: string, password: string): Promise<UserResponse> {
-    const response = await api.post<UserResponse>(`/users/admin?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`)
+  async createAdmin(name: string, email: string, password: string, securityCode: string): Promise<UserResponse> {
+    const response = await api.post<UserResponse>(`/users/admin?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&securityCode=${encodeURIComponent(securityCode)}`)
     return response.data
   },
 }

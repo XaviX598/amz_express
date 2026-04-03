@@ -16,6 +16,7 @@ spring.jpa.properties.hibernate.format_sql=true
 # JWT Configuration
 jwt.secret=${JWT_SECRET:your-256-bit-secret-key-for-jwt-signing-minimum-32-chars}
 jwt.expiration=${JWT_EXPIRATION:86400000}
+app.master-security-code=${APP_MASTER_SECURITY_CODE:}
 
 # CORS (comma-separated; supports wildcards with setAllowedOriginPatterns)
 app.cors.allowed-origins=${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}

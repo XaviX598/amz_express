@@ -344,6 +344,8 @@ async function createOrder() {
     productPrice: productPrice.value!,
     weight: weight.value || undefined,
     shippingOption: shippingOption,
+    paymentMethod: 'TRANSFERENCIA',
+    securityCode: '',
     amazonUrl: amazonUrl.value || undefined,
   })
   if (order) {

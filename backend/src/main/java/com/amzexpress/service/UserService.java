@@ -19,6 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityCodeService securityCodeService;
 
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
@@ -67,7 +68,7 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
-    public UserResponse createAdmin(String name, String email, String password, String adminEmail) {
+    public UserResponse createAdmin(String name, String email, String password, String securityCode, String adminEmail) {
         // Verify superadmin permissions
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin no encontrado"));
@@ -75,6 +76,11 @@ public class UserService {
         if (admin.getRole() != Role.SUPERADMIN) {
             throw new RuntimeException("Solo un SUPERADMIN puede crear administradores");
         }
+
+        securityCodeService.validateOrThrow(
+                securityCode,
+                "Código de seguridad inválido para crear administradores"
+        );
 
         // Check if email already exists
         if (userRepository.existsByEmail(email)) {

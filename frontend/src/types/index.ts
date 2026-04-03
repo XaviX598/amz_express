@@ -80,6 +80,7 @@ export interface CreateOrderRequest {
   shippingOption: ShippingOption
   paymentMethod: PaymentMethod
   paymentReference?: string
+  securityCode: string
   amazonUrl?: string
   notes?: string
 }
