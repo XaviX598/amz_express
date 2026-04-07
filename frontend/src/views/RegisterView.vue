@@ -21,6 +21,7 @@ const verificationEmail = ref('')
 const verificationCode = ref('')
 const verifying = ref(false)
 const verificationError = ref('')
+const verificationMessage = ref('')
 const resending = ref(false)
 const resendCooldown = ref(0)
 let resendTimer: ReturnType<typeof setInterval> | null = null
@@ -32,6 +33,10 @@ const resendLabel = computed(() => {
 function startResendCooldown(seconds = 60) {
   resendCooldown.value = seconds
   if (resendTimer) clearInterval(resendTimer)
+  if (seconds <= 0) {
+    resendTimer = null
+    return
+  }
   resendTimer = setInterval(() => {
     if (resendCooldown.value <= 1) {
       resendCooldown.value = 0
@@ -73,8 +78,11 @@ async function handleSubmit() {
     if (response.requiresVerification) {
       // Show verification modal
       verificationEmail.value = response.email
+      verificationMessage.value = response.message || ''
+      verificationCode.value = ''
+      verificationError.value = ''
       showVerification.value = true
-      startResendCooldown(60)
+      startResendCooldown(response.codeSent ?? true ? 60 : 0)
     } else {
       // Should not happen but handle it
       router.push('/ordenes')
@@ -268,6 +276,12 @@ onUnmounted(() => {
               <p class="text-[#62757f] text-sm mt-2">
                 Te enviamos un código de 6 dígitos a<br />
                 <span class="text-[#35627A] font-semibold">{{ verificationEmail }}</span>
+              </p>
+              <p
+                v-if="verificationMessage"
+                class="mt-3 text-xs leading-relaxed text-[#4f6672]"
+              >
+                {{ verificationMessage }}
               </p>
             </div>
 

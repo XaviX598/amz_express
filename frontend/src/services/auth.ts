@@ -3,6 +3,7 @@ import type { AuthResponse, LoginRequest, RegisterRequest } from '@/types'
 
 export interface RegisterResponse {
   requiresVerification: boolean
+  codeSent: boolean
   email: string
   message: string
 }

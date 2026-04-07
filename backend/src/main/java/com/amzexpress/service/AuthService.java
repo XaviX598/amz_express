@@ -33,8 +33,20 @@ public class AuthService {
 
     @Transactional
     public Map<String, Object> register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
+        Optional<User> existingUserOpt = userRepository.findByEmail(request.getEmail());
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+
+            if (Boolean.TRUE.equals(existingUser.getIsVerified())) {
+                throw new RuntimeException("El email ya esta registrado");
+            }
+
+            return Map.of(
+                "requiresVerification", true,
+                "email", existingUser.getEmail(),
+                "codeSent", false,
+                "message", "Tu cuenta ya existe y esta pendiente de verificacion. Ingresa tu codigo o usa reenviar."
+            );
         }
 
         String verificationCode = emailService.generateVerificationCode();
@@ -59,10 +71,10 @@ public class AuthService {
         return Map.of(
             "requiresVerification", true,
             "email", user.getEmail(),
+            "codeSent", true,
             "message", "Se envio un codigo de verificacion a tu correo"
         );
     }
-
     @Transactional
     public Map<String, Object> verifyCode(VerifyCodeRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
