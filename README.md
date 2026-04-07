@@ -138,3 +138,24 @@ Total = Precio Producto + Impuestos (15%) + Handling (9.27%) + Envío + Aduana (
 ## 📜 Licencia
 
 MIT
+
+## Deploy 1-click (GitHub + Vercel + Oracle)
+
+Desde la raíz del repo:
+
+```powershell
+.\deploy-prod.ps1 -CommitMessage "fix: tu mensaje"
+```
+
+Opciones útiles:
+
+```powershell
+# Simular sin ejecutar nada
+.\deploy-prod.ps1 -DryRun
+
+# Solo push a GitHub (sin backend Oracle)
+.\deploy-prod.ps1 -SkipBackend
+
+# Solo backend Oracle (sin operaciones git)
+.\deploy-prod.ps1 -SkipGit
+```
