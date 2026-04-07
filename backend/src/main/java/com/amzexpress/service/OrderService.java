@@ -20,6 +20,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
+    private static final BigDecimal[] STANDARD_USER_SHIPPING_TIERS = new BigDecimal[]{
+            BigDecimal.ZERO,          // 0 (unused)
+            new BigDecimal("11.00"), // 1 lb
+            new BigDecimal("16.48"), // 2 lb
+            new BigDecimal("20.99"), // 3 lb
+            new BigDecimal("28.28"), // 4 lb
+            new BigDecimal("37.61"), // 5 lb
+            new BigDecimal("42.14"), // 6 lb
+            new BigDecimal("46.13"), // 7 lb
+            new BigDecimal("50.12"), // 8 lb
+            new BigDecimal("54.11")  // 9+ lb
+    };
+
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository statusHistoryRepository;
     private final CustomUserDetailsService userDetailsService;
@@ -253,8 +266,6 @@ public class OrderService {
     public PricingCalculationResponse calculatePricing(BigDecimal productPrice, BigDecimal weight, String shippingOption) {
         BigDecimal taxRate = settingsService.getTaxRate();
         BigDecimal handlingRate = settingsService.getHandlingRate();
-        BigDecimal shippingRatePerLb = settingsService.getShippingRatePerLb();
-        BigDecimal maxShipping = settingsService.getMaxShipping();
         BigDecimal customsFee = settingsService.getCustomsFee();
         BigDecimal maxWeight = settingsService.getMaxWeightForStandard();
         BigDecimal maxPrice = settingsService.getMaxPriceForStandard();
@@ -264,15 +275,8 @@ public class OrderService {
         BigDecimal handling = productPrice.multiply(handlingRate)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        // Shipping calculation
-        BigDecimal shippingCost = BigDecimal.ZERO;
-        if (weight != null && weight.compareTo(BigDecimal.ZERO) > 0) {
-            shippingCost = weight.multiply(shippingRatePerLb)
-                    .setScale(2, RoundingMode.HALF_UP);
-            if (shippingCost.compareTo(maxShipping) > 0) {
-                shippingCost = maxShipping;
-            }
-        }
+        // Shipping calculation (tabla fija para cotizador de usuario normal)
+        BigDecimal shippingCost = resolveStandardUserShippingCost(weight);
 
         // Calculate total
         BigDecimal total = productPrice
@@ -314,6 +318,17 @@ public class OrderService {
                 .categoryCMessage(categoryCMessage)
                 .shippingDescription(shippingDescription)
                 .build();
+    }
+
+    private BigDecimal resolveStandardUserShippingCost(BigDecimal weight) {
+        if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        int weightTier = weight.setScale(0, RoundingMode.CEILING).intValue();
+        weightTier = Math.max(1, Math.min(weightTier, 9));
+
+        return STANDARD_USER_SHIPPING_TIERS[weightTier].setScale(2, RoundingMode.HALF_UP);
     }
 
     private OrderResponse toOrderResponse(Order order) {
